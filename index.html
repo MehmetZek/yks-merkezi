@@ -4,28 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>YKS Merkezi</title>
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#0a0a0f">
+    <meta name="theme-color" content="#6c63ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YKS Merkezi">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230a0a0f' width='100' height='100' rx='20'/><text y='.9em' x='.15em' font-size='75'>⚡</text></svg>">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
-    <link rel="apple-touch-icon" href="android-chrome-192x192.png">dzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHJlY3QgZmlsbD0nJTIzMGEwYTBmJyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgcng9JzIwJy8+PHRleHQgeT0nLjllbScgeD0nLjE1ZW0nIGZvbnQtc2l6ZT0nNzUnPuKaoDwvdGV4dD48L3N2Zz4iLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XX0=">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config={darkMode:'class',theme:{extend:{colors:{dark:{900:'#0a0a0f',800:'#12121a',700:'#1a1a2e',600:'#2a2a3e'},accent:{DEFAULT:'#6c63ff',dim:'#4a42d4'},success:'#00c853',warning:'#ffd600',danger:'#ff5252'}}}}
+
+        // ═══════════ PWA ICON GENERATOR ═══════════
+        function generateIcons(){
+            [192,512].forEach(size=>{
+                const c=document.createElement('canvas');
+                c.width=size;c.height=size;
+                const ctx=c.getContext('2d');
+                // Background
+                ctx.fillStyle='#6c63ff';
+                const r=size*0.18;
+                ctx.beginPath();
+                ctx.moveTo(r,0);ctx.lineTo(size-r,0);ctx.quadraticCurveTo(size,0,size,r);
+                ctx.lineTo(size,size-r);ctx.quadraticCurveTo(size,size,size-r,size);
+                ctx.lineTo(r,size);ctx.quadraticCurveTo(0,size,0,size-r);
+                ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);
+                ctx.fill();
+                // Bolt icon
+                ctx.fillStyle='#ffffff';
+                ctx.font=`bold ${size*0.45}px Arial`;
+                ctx.textAlign='center';
+                ctx.textBaseline='middle';
+                ctx.fillText('⚡',size/2,size*0.38);
+                // Text
+                ctx.font=`bold ${size*0.18}px Arial`;
+                ctx.fillText('YKS',size/2,size*0.72);
+                // Set as icons
+                const url=c.toDataURL('image/png');
+                if(size===192){
+                    let link=document.querySelector('link[rel="icon"]');
+                    if(!link){link=document.createElement('link');link.rel='icon';document.head.appendChild(link)}
+                    link.href=url;
+                    let apple=document.querySelector('link[rel="apple-touch-icon"]');
+                    if(!apple){apple=document.createElement('link');apple.rel='apple-touch-icon';document.head.appendChild(apple)}
+                    apple.href=url;
+                }
+                window['icon'+size]=url;
+            });
+            // Dynamic manifest
+            const manifest={
+                name:"YKS Merkezi",short_name:"YKS",description:"YKS Hazırlık Merkezi",
+                start_url:".",display:"standalone",background_color:"#0a0a0f",theme_color:"#6c63ff",
+                orientation:"portrait",
+                icons:[
+                    {src:window.icon192,sizes:"192x192",type:"image/png",purpose:"any maskable"},
+                    {src:window.icon512,sizes:"512x512",type:"image/png",purpose:"any maskable"}
+                ]
+            };
+            const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+            const mLink=document.querySelector('link[rel="manifest"]')||document.createElement('link');
+            mLink.rel='manifest';mLink.href=URL.createObjectURL(blob);
+            document.head.appendChild(mLink);
+        }
+        window.addEventListener('load',generateIcons);
     </script>
     <style>
         *{scrollbar-width:thin;scrollbar-color:#2a2a3e #12121a;-webkit-tap-highlight-color:transparent}
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-track{background:#12121a}
         ::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:3px}
-        body{overscroll-behavior:none;-webkit-user-select:none;user-select:text}
+        body{overscroll-behavior:none}
         .fade-in{animation:fadeIn .3s ease}
         @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .streak-flame{animation:pulse 1.5s ease-in-out infinite}
@@ -34,9 +80,9 @@
         .xp-fill{transition:width 1s ease}
         .glow{box-shadow:0 0 20px rgba(108,99,255,.25)}
         .progress-ring{transition:stroke-dashoffset .8s ease}
-        .warning-pulse{animation:warningPulse 2s ease-in-out infinite}
-        @keyframes warningPulse{0%,100%{opacity:1}50%{opacity:.6}}
-        @media(max-width:768px){.mobile-nav{position:fixed;bottom:0;left:0;right:0;top:auto;width:100%;height:60px;flex-direction:row;border-right:none;border-top:1px solid #2a2a3e;z-index:50}.mobile-nav .nav-items{flex-direction:row;overflow-x:auto;padding:0}.mobile-nav button{flex-direction:column;gap:2px;padding:8px 0;font-size:10px;min-width:52px}.mobile-main{margin-left:0;margin-bottom:65px;padding:16px}}
+        .warning-pulse{animation:wp 2s ease-in-out infinite}
+        @keyframes wp{0%,100%{opacity:1}50%{opacity:.6}}
+        .notif-badge{position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:#ff5252;border-radius:50%;border:2px solid #12121a}
     </style>
 </head>
 <body class="bg-dark-900 text-gray-200 min-h-screen">
@@ -47,6 +93,95 @@
     <script type="text/babel">
 const{useState,useEffect,useRef,useCallback}=React;
 
+// ═══════════ NOTIFICATION MANAGER ═══════════
+const NotifManager={
+    permission:'default',
+    
+    async requestPermission(){
+        if(!('Notification' in window)){console.log('Bildirim desteklenmiyor');return false}
+        if(Notification.permission==='granted'){this.permission='granted';return true}
+        if(Notification.permission==='denied'){this.permission='denied';return false}
+        const result=await Notification.requestPermission();
+        this.permission=result;
+        return result==='granted';
+    },
+    
+    send(title,body,tag='yks'){
+        if(this.permission!=='granted'&&Notification.permission!=='granted')return;
+        try{
+            const n=new Notification(title,{
+                body,tag,icon:window.icon192||'',badge:window.icon192||'',
+                vibrate:[200,100,200],
+                requireInteraction:false
+            });
+            setTimeout(()=>n.close(),8000);
+        }catch(e){console.log('Bildirim hatası:',e)}
+    },
+    
+    scheduleCheck(sessions,tasks,goals){
+        const now=new Date();
+        const h=now.getHours();
+        const m=now.getMinutes();
+        const today=now.toISOString().split('T')[0];
+        const todayQ=sessions.filter(s=>s.date===today).reduce((a,s)=>a+(parseInt(s.qc||s.questionCount)||0),0);
+        const todayMins=sessions.filter(s=>s.date===today).reduce((a,s)=>a+(parseInt(s.dur||s.duration)||0),0);
+        const todayTasks=tasks.filter(t=>t.date===today);
+        const tasksDone=todayTasks.filter(t=>t.completed).length;
+        const lastNotif=localStorage.getItem('yksos_lastNotif')||'';
+        const notifKey=`${today}-${h}`;
+        
+        if(lastNotif===notifKey)return;
+        
+        // 08:00 - Günaydın
+        if(h===8&&m<5){
+            const yksGun=Math.ceil((new Date('2027-06-19')-now)/864e5);
+            this.send('☀️ Günaydın Mehmet Zeki!',`YKS'ye ${yksGun} gün kaldı. Bugün hedef: 120 soru! 💪`,'morning');
+            localStorage.setItem('yksos_lastNotif',notifKey);
+        }
+        // 12:00 - Öğle kontrol
+        else if(h===12&&m<5){
+            if(todayQ<30){
+                this.send('📊 Öğle Kontrolü',`Henüz ${todayQ} soru çözdün. Öğleden sonra hızlan! 🚀`,'noon');
+            }else{
+                this.send('📊 Öğle Kontrolü',`${todayQ} soru çözmüşsün, güzel gidiyorsun! 👏`,'noon');
+            }
+            localStorage.setItem('yksos_lastNotif',notifKey);
+        }
+        // 16:15 - Çalışma zamanı (okul sonrası)
+        else if(h===16&&m>=14&&m<=16){
+            this.send('📚 Çalışma Zamanı!',`Eve geldin mi? Hadi kitapları aç! Bugün: ${todayQ}/120 soru 📝`,'study');
+            localStorage.setItem('yksos_lastNotif',notifKey);
+        }
+        // 19:00 - Akşam durumu
+        else if(h===19&&m<5){
+            if(todayQ<80){
+                this.send('⚠️ Hedefin Geride!',`Bugün ${todayQ} soru çözdün. Minimum 80 soru hedefini yakala! 🎯`,'evening');
+            }else{
+                this.send('🔥 Harika Gidiyorsun!',`${todayQ} soru! ${todayQ>=120?'İdeal hedefe ulaştın! 🏆':'Biraz daha çöz, 120\'ye ulaş!'}`,'evening');
+            }
+            localStorage.setItem('yksos_lastNotif',notifKey);
+        }
+        // 21:30 - Günlük değerlendirme hatırlatma
+        else if(h===21&&m>=29&&m<=31){
+            const todayLog=JSON.parse(localStorage.getItem('yksos_dailyLogs')||'[]').some(l=>l.date===today);
+            if(!todayLog){
+                this.send('📝 Günlük Değerlendirme',`Bugünü değerlendir! ${todayQ} soru çözdün, ${tasksDone}/${todayTasks.length} görev tamamladın.`,'review');
+            }
+            localStorage.setItem('yksos_lastNotif',notifKey);
+        }
+        // 23:00 - İyi geceler
+        else if(h===23&&m<5){
+            const streak=(()=>{let s=0;const d=new Date();while(true){const ds=d.toISOString().split('T')[0];const has=sessions.some(x=>x.date===ds);if(!has&&ds!==today)break;if(has)s++;d.setDate(d.getDate()-1)}return s})();
+            if(todayQ>0){
+                this.send('🌙 İyi Geceler!',`Bugün ${todayQ} soru çözdün. Streak: ${streak} gün 🔥 Yarın devam!`,'night');
+            }else{
+                this.send('😴 Streak Tehlikede!',`Bugün hiç çalışma kaydın yok! En az 1 soru çöz, streak kırılmasın! 🔥`,'night');
+            }
+            localStorage.setItem('yksos_lastNotif',notifKey);
+        }
+    }
+};
+
 // ═══════════ STORE ═══════════
 const S={
     g:(k,d)=>{try{return JSON.parse(localStorage.getItem('yksos_'+k))||d}catch{return d}},
@@ -55,70 +190,33 @@ const S={
 
 // ═══════════ CONSTANTS ═══════════
 const SUBS=[
-    {id:'turkce',name:'Türkçe',color:'#29b6f6',max:40,icon:'📖'},
-    {id:'matematik',name:'Matematik',color:'#6c63ff',max:40,icon:'📐'},
-    {id:'fizik',name:'Fizik',color:'#00c853',max:14,icon:'⚛️'},
-    {id:'kimya',name:'Kimya',color:'#ffd600',max:13,icon:'🧪'},
-    {id:'biyoloji',name:'Biyoloji',color:'#ff5252',max:13,icon:'🧬'},
-    {id:'tarih',name:'Tarih',color:'#ff9800',max:10,icon:'📜'},
-    {id:'cografya',name:'Coğrafya',color:'#e91e63',max:5,icon:'🌍'},
-    {id:'felsefe',name:'Felsefe',color:'#9c27b0',max:5,icon:'🤔'},
-    {id:'din',name:'Din Kültürü',color:'#795548',max:5,icon:'☪️'}
+    {id:'turkce',name:'Türkçe',color:'#29b6f6',max:40},
+    {id:'matematik',name:'Matematik',color:'#6c63ff',max:40},
+    {id:'fizik',name:'Fizik',color:'#00c853',max:14},
+    {id:'kimya',name:'Kimya',color:'#ffd600',max:13},
+    {id:'biyoloji',name:'Biyoloji',color:'#ff5252',max:13},
+    {id:'tarih',name:'Tarih',color:'#ff9800',max:10},
+    {id:'cografya',name:'Coğrafya',color:'#e91e63',max:5},
+    {id:'felsefe',name:'Felsefe',color:'#9c27b0',max:5},
+    {id:'din',name:'Din Kültürü',color:'#795548',max:5}
 ];
 
-const MTYPES=[
-    {id:'bilgi',name:'Bilgi Eksikliği',color:'#ff5252'},
-    {id:'dikkat',name:'Dikkatsizlik',color:'#ffd600'},
-    {id:'islem',name:'İşlem Hatası',color:'#ff9800'},
-    {id:'zaman',name:'Süre Yetmedi',color:'#6c63ff'},
-    {id:'anlama',name:'Anlamama',color:'#29b6f6'}
-];
-
+const MTYPES=[{id:'bilgi',name:'Bilgi Eksikliği',color:'#ff5252'},{id:'dikkat',name:'Dikkatsizlik',color:'#ffd600'},{id:'islem',name:'İşlem Hatası',color:'#ff9800'},{id:'zaman',name:'Süre Yetmedi',color:'#6c63ff'},{id:'anlama',name:'Anlamama',color:'#29b6f6'}];
 const TSTATUS={not_started:{l:'Başlanmadı',c:'#4a4a5e'},learning:{l:'Öğreniliyor',c:'#ffd600'},practicing:{l:'Pratik',c:'#29b6f6'},mastered:{l:'Tamamlandı',c:'#00c853'}};
-
 const LEVELS=[{min:0,n:'Başlayan',i:'🌱'},{min:100,n:'Çırak',i:'📘'},{min:300,n:'Öğrenci',i:'📗'},{min:600,n:'Disiplinli',i:'⚡'},{min:1000,n:'Azimli',i:'💪'},{min:1500,n:'Çalışkan',i:'🔥'},{min:2500,n:'Uzman',i:'🧠'},{min:4000,n:'Makine',i:'🤖'},{min:6000,n:'Efsane',i:'👑'},{min:10000,n:'YKS Ustası',i:'🌟'}];
 const STREAKS=[{min:0,t:'Yeni',i:'🌱'},{min:3,t:'Çırak',i:'🔥'},{min:7,t:'Disiplinli',i:'⚡'},{min:14,t:'Azimli',i:'💪'},{min:30,t:'Makine',i:'🤖'},{min:60,t:'Efsane',i:'👑'},{min:100,t:'Unstoppable',i:'🌟'}];
-
-const DAILY_GOAL_MIN=80;
-const DAILY_GOAL_IDEAL=120;
+const DG_MIN=80,DG_IDEAL=120;
 
 const MUF=[
-    {id:'matematik',name:'Matematik',color:'#6c63ff',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',
-        d1:['Yönlü Açılar','Trigonometrik Fonksiyonlar','Doğrunun Analitik İncelemesi','Modüler Aritmetik ve İşlemler','Fonksiyonlarla İlgili Uygulamalar','İkinci Dereceden Fonksiyonlar ve Grafikleri','Fonksiyonların Dönüşümleri'],
-        d2:['2. Dereceden İki Bilinmeyenli Denklem Sistemleri','2. Dereceden Eşitsizlikler ve Sistemleri','Çemberin Temel Elemanları','Çemberde Açılar','Çemberde Teğet','Dairenin Çevresi ve Alanı','Katı Cisimler','Olasılık']},
-    {id:'fizik',name:'Fizik',color:'#00c853',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',
-        d1:['Vektörler','Bağıl Hareket','Newton Hareket Yasaları','İvmeli Hareket','Serbest Düşme','Limit Hız','Düşey Atış','Yatay Atış','Eğik Atış','Hooke Yasası','İtme','Çizgisel Momentum','Momentumun Korunumu','Tork','Denge','Kütle ve Ağırlık Merkezi','Elektriksel Kuvvet','Elektrik Alan','Elektriksel Potansiyel Enerji','Elektriksel Potansiyel ve Farkı'],
-        d2:['Sığa (Kapasite)','Manyetik Alan','Manyetik Kuvvet','Manyetik Akı','Elektromotor Kuvveti','Alternatif Akım','İndüktans Kapasitans Empedans','Rezonans','İndüksiyon Akımı','Özindüksiyon Akımı','Transformatör']},
-    {id:'kimya',name:'Kimya',color:'#ffd600',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',
-        d1:['Atomun Kuantum Modeli','Periyodik Sistem ve Elektron Dizilimleri','Periyodik Özellikler','Elementleri Tanıyalım','Yükseltgenme Basamakları','Gazların Özellikleri ve Gaz Yasaları','İdeal Gaz Yasası','Gazlarda Kinetik Teori','Gaz Karışımları','Gerçek Gazlar','Çözücü ve Çözünen Etkileşimleri','Derişim Birimleri'],
-        d2:['Koligatif Özellikler','Çözünürlük','Çözünürlüğe Etki Eden Faktörler','Tepkimelerde Isı Değişimi ve Oluşum Entalpisi','Bağ Enerjileri ve Hess Yasası','Tepkime Hızları','Tepkime Hızına Etki Eden Faktörler','Kimyasal Denge','Dengeye Etki Eden Faktörler','Sulu Çözelti Dengeleri']},
-    {id:'biyoloji',name:'Biyoloji',color:'#ff5252',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',
-        d1:['Denetleyici ve Düzenleyici Sistem','Duyu Organları','Destek ve Hareket Sistemi','Sindirim Sistemi'],
-        d2:['Dolaşım Sistemi','Solunum Sistemi','Üriner Sistem','Üreme Sistemi ve Embriyonik Gelişim','Komünite Ekolojisi','Popülasyon Ekolojisi']},
-    {id:'turkce',name:'Türkçe',color:'#29b6f6',d1l:'TYT Konuları',d2l:null,
-        d1:['Sözcükte Anlam','Cümlede Anlam','Paragraf','Anlatım Bozuklukları','Ses Bilgisi','Yazım Kuralları','Noktalama İşaretleri','Sözcük Türleri','Cümle Türleri','Fiilde Çatı'],d2:[]},
-    {id:'din',name:'Din Kültürü',color:'#795548',d1l:'1. Dönem',d2l:'2. Dönem',
-        d1:['İnsan ve Din','İslam ve İbadet','Hz. Muhammed\'in Örnekliği','Kur\'an ve Yorumu','Ahlak ve Değerler'],
-        d2:['Din ve Hayat','İslam Medeniyeti','Hz. Muhammed ve Gençlik','Yaşayan Dinler','Din ve Laiklik']}
+    {id:'matematik',name:'Matematik',color:'#6c63ff',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',d1:['Yönlü Açılar','Trigonometrik Fonksiyonlar','Doğrunun Analitik İncelemesi','Modüler Aritmetik ve İşlemler','Fonksiyonlarla İlgili Uygulamalar','İkinci Dereceden Fonksiyonlar ve Grafikleri','Fonksiyonların Dönüşümleri'],d2:['2. Dereceden İki Bilinmeyenli Denklem Sistemleri','2. Dereceden Eşitsizlikler ve Sistemleri','Çemberin Temel Elemanları','Çemberde Açılar','Çemberde Teğet','Dairenin Çevresi ve Alanı','Katı Cisimler','Olasılık']},
+    {id:'fizik',name:'Fizik',color:'#00c853',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',d1:['Vektörler','Bağıl Hareket','Newton Hareket Yasaları','İvmeli Hareket','Serbest Düşme','Limit Hız','Düşey Atış','Yatay Atış','Eğik Atış','Hooke Yasası','İtme','Çizgisel Momentum','Momentumun Korunumu','Tork','Denge','Kütle ve Ağırlık Merkezi','Elektriksel Kuvvet','Elektrik Alan','Elektriksel Potansiyel Enerji','Elektriksel Potansiyel ve Farkı'],d2:['Sığa (Kapasite)','Manyetik Alan','Manyetik Kuvvet','Manyetik Akı','Elektromotor Kuvveti','Alternatif Akım','İndüktans Kapasitans Empedans','Rezonans','İndüksiyon Akımı','Özindüksiyon Akımı','Transformatör']},
+    {id:'kimya',name:'Kimya',color:'#ffd600',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',d1:['Atomun Kuantum Modeli','Periyodik Sistem ve Elektron Dizilimleri','Periyodik Özellikler','Elementleri Tanıyalım','Yükseltgenme Basamakları','Gazların Özellikleri ve Gaz Yasaları','İdeal Gaz Yasası','Gazlarda Kinetik Teori','Gaz Karışımları','Gerçek Gazlar','Çözücü ve Çözünen Etkileşimleri','Derişim Birimleri'],d2:['Koligatif Özellikler','Çözünürlük','Çözünürlüğe Etki Eden Faktörler','Tepkimelerde Isı Değişimi ve Oluşum Entalpisi','Bağ Enerjileri ve Hess Yasası','Tepkime Hızları','Tepkime Hızına Etki Eden Faktörler','Kimyasal Denge','Dengeye Etki Eden Faktörler','Sulu Çözelti Dengeleri']},
+    {id:'biyoloji',name:'Biyoloji',color:'#ff5252',d1l:'1. Dönem',d2l:'2. Dönem (Sınav)',d1:['Denetleyici ve Düzenleyici Sistem','Duyu Organları','Destek ve Hareket Sistemi','Sindirim Sistemi'],d2:['Dolaşım Sistemi','Solunum Sistemi','Üriner Sistem','Üreme Sistemi ve Embriyonik Gelişim','Komünite Ekolojisi','Popülasyon Ekolojisi']},
+    {id:'turkce',name:'Türkçe',color:'#29b6f6',d1l:'TYT Konuları',d2l:null,d1:['Sözcükte Anlam','Cümlede Anlam','Paragraf','Anlatım Bozuklukları','Ses Bilgisi','Yazım Kuralları','Noktalama İşaretleri','Sözcük Türleri','Cümle Türleri','Fiilde Çatı'],d2:[]},
+    {id:'din',name:'Din Kültürü',color:'#795548',d1l:'1. Dönem',d2l:'2. Dönem',d1:['İnsan ve Din','İslam ve İbadet','Hz. Muhammed\'in Örnekliği','Kur\'an ve Yorumu','Ahlak ve Değerler'],d2:['Din ve Hayat','İslam Medeniyeti','Hz. Muhammed ve Gençlik','Yaşayan Dinler','Din ve Laiklik']}
 ];
 
-const PY_CH=[
-    {id:1,t:'Sayı Tahmin Oyunu',d:'1-100 arası rastgele sayı, yüksek/düşük ipucu',df:'Kolay',xp:15},
-    {id:2,t:'En Büyük Sayı',d:'Listeden en büyük sayıyı bulan fonksiyon',df:'Kolay',xp:10},
-    {id:3,t:'Çift Sayı Filtresi',d:'Listeden çift sayıları filtreleyen program',df:'Kolay',xp:10},
-    {id:4,t:'Fibonacci',d:'n. Fibonacci sayısını hesapla (iteratif+rekürsif)',df:'Orta',xp:20},
-    {id:5,t:'Palindrom',d:'String palindrom kontrolü',df:'Kolay',xp:10},
-    {id:6,t:'Faktöriyel',d:'Rekürsif ve iteratif faktöriyel',df:'Kolay',xp:10},
-    {id:7,t:'Hesap Makinesi',d:'4 işlem hesap makinesi',df:'Orta',xp:20},
-    {id:8,t:'Kelime Sayacı',d:'Kelime, harf, sesli harf sayısı',df:'Orta',xp:15},
-    {id:9,t:'Sıcaklık Dönüştürücü',d:'Celsius ↔ Fahrenheit',df:'Kolay',xp:10},
-    {id:10,t:'Asal Sayı',d:'Asal sayı kontrol fonksiyonu',df:'Orta',xp:15},
-    {id:11,t:'Liste Ters Çevir',d:'Built-in kullanmadan ters çevir',df:'Kolay',xp:10},
-    {id:12,t:'Çarpım Tablosu',d:'10x10 çarpım tablosu',df:'Kolay',xp:10},
-    {id:13,t:'Şifre Üretici',d:'Rastgele güçlü şifre üret',df:'Orta',xp:20},
-    {id:14,t:'To-Do List',d:'Görev CRUD uygulaması',df:'Zor',xp:30},
-    {id:15,t:'Zar Simülasyonu',d:'2 zar + istatistik',df:'Orta',xp:15}
-];
+const PY_CH=[{id:1,t:'Sayı Tahmin Oyunu',d:'1-100 arası tahmin',df:'Kolay',xp:15},{id:2,t:'En Büyük Sayı',d:'Listeden max bul',df:'Kolay',xp:10},{id:3,t:'Çift Sayı Filtresi',d:'Çift sayıları filtrele',df:'Kolay',xp:10},{id:4,t:'Fibonacci',d:'n. Fibonacci hesapla',df:'Orta',xp:20},{id:5,t:'Palindrom',d:'Palindrom kontrolü',df:'Kolay',xp:10},{id:6,t:'Faktöriyel',d:'Rekürsif faktöriyel',df:'Kolay',xp:10},{id:7,t:'Hesap Makinesi',d:'4 işlem',df:'Orta',xp:20},{id:8,t:'Kelime Sayacı',d:'Harf ve kelime say',df:'Orta',xp:15},{id:9,t:'Sıcaklık Çevirici',d:'C↔F dönüşümü',df:'Kolay',xp:10},{id:10,t:'Asal Sayı',d:'Asal kontrol',df:'Orta',xp:15},{id:11,t:'Liste Ters Çevir',d:'Built-in kullanmadan',df:'Kolay',xp:10},{id:12,t:'Çarpım Tablosu',d:'10x10 tablo',df:'Kolay',xp:10},{id:13,t:'Şifre Üretici',d:'Rastgele güçlü şifre',df:'Orta',xp:20},{id:14,t:'To-Do List',d:'CRUD uygulaması',df:'Zor',xp:30},{id:15,t:'Zar Simülasyonu',d:'2 zar + istatistik',df:'Orta',xp:15}];
 
 // ═══════════ UTILS ═══════════
 const fd=d=>new Date(d).toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
@@ -131,8 +229,7 @@ const nl=x=>{const i=LEVELS.findIndex(l=>l.min>x);return i>=0?LEVELS[i]:LEVELS[L
 const gs=s=>STREAKS.slice().reverse().find(t=>s>=t.min)||STREAKS[0];
 const cn=(d,y)=>Math.max(0,d-(y/4));
 
-// Auto daily tasks generator
-const generateDailyTasks=(date)=>[
+const genTasks=date=>[
     {id:Date.now(),date,text:'Matematik – 20 soru',subject:'matematik',completed:false,xp:10},
     {id:Date.now()+1,date,text:'Türkçe – 10 paragraf',subject:'turkce',completed:false,xp:10},
     {id:Date.now()+2,date,text:'Fizik – 15 soru',subject:'fizik',completed:false,xp:10},
@@ -141,86 +238,28 @@ const generateDailyTasks=(date)=>[
     {id:Date.now()+5,date,text:'Kara Defter tekrarı',subject:'genel',completed:false,xp:15}
 ];
 
-// ═══════════ UI ═══════════
-const Card=({children,className='',title,subtitle,action})=>(
-    <div className={`bg-dark-800 border border-dark-600 rounded-2xl p-4 md:p-5 fade-in ${className}`}>
-        {(title||action)&&<div className="flex justify-between items-start mb-3">{title&&<div><h3 className="text-base font-semibold text-white">{title}</h3>{subtitle&&<p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}</div>}{action}</div>}
-        {children}
-    </div>
-);
+// ═══════════ UI COMPONENTS ═══════════
+const Card=({children,className='',title,subtitle,action})=>(<div className={`bg-dark-800 border border-dark-600 rounded-2xl p-4 fade-in ${className}`}>{(title||action)&&<div className="flex justify-between items-start mb-3">{title&&<div><h3 className="text-base font-semibold text-white">{title}</h3>{subtitle&&<p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}</div>}{action}</div>}{children}</div>);
+const PBar=({value,max,color='#6c63ff',label=true,size='md'})=>{const p=max>0?Math.min(value/max*100,100):0;const h={sm:'h-1.5',md:'h-2',lg:'h-3',xl:'h-4'};return(<div>{label&&<div className="flex justify-between text-xs text-gray-500 mb-1"><span>{value}</span><span>{max}</span></div>}<div className={`bg-dark-900 rounded-full ${h[size]} overflow-hidden`}><div className={`${h[size]} rounded-full transition-all duration-700`} style={{width:`${p}%`,backgroundColor:color}}/></div></div>)};
+const Btn=({children,onClick,v='primary',s='md',className='',disabled=false})=>{const vs={primary:'bg-accent hover:bg-accent-dim text-white',success:'bg-success hover:bg-green-600 text-white',danger:'bg-danger hover:bg-red-600 text-white',ghost:'bg-transparent border border-dark-600 text-gray-400 hover:border-accent hover:text-accent',warning:'bg-warning hover:bg-yellow-600 text-dark-900'};const ss={sm:'px-2.5 py-1.5 text-xs',md:'px-4 py-2 text-sm',lg:'px-5 py-2.5 text-base'};return <button onClick={onClick} disabled={disabled} className={`${vs[v]} ${ss[s]} rounded-lg font-semibold transition-all disabled:opacity-50 active:scale-95 ${className}`}>{children}</button>};
+const Inp=({label,type='text',value,onChange,placeholder,className=''})=>(<div className={className}>{label&&<label className="block text-xs text-gray-500 mb-1">{label}</label>}<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent focus:outline-none"/></div>);
+const Sel=({label,value,onChange,options,className=''})=>(<div className={className}>{label&&<label className="block text-xs text-gray-500 mb-1">{label}</label>}<select value={value} onChange={e=>onChange(e.target.value)} className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></div>);
+const Txt=({label,value,onChange,placeholder,rows=3,className=''})=>(<div className={className}>{label&&<label className="block text-xs text-gray-500 mb-1">{label}</label>}<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent focus:outline-none resize-none"/></div>);
+const Toast=({msg,show})=>(<div className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 bg-dark-700 border border-accent rounded-xl px-5 py-2.5 text-sm z-[60] transition-all duration-300 whitespace-nowrap ${show?'opacity-100 translate-y-0':'opacity-0 translate-y-4 pointer-events-none'}`}>{msg}</div>);
+const Modal=({isOpen,onClose,title,children})=>{if(!isOpen)return null;return(<div className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={onClose}><div className="bg-dark-800 border border-dark-600 rounded-t-2xl md:rounded-2xl p-5 w-full md:max-w-lg max-h-[85vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="flex justify-between items-center mb-4"><h3 className="text-base font-semibold text-white">{title}</h3><button onClick={onClose} className="text-gray-500 hover:text-white text-xl w-8 h-8">×</button></div>{children}</div></div>)};
 
-const PBar=({value,max,color='#6c63ff',label=true,size='md'})=>{
-    const p=max>0?Math.min(value/max*100,100):0;
-    const h={sm:'h-1.5',md:'h-2',lg:'h-3',xl:'h-4'};
-    return(<div>{label&&<div className="flex justify-between text-xs text-gray-500 mb-1"><span>{value}</span><span>{max}</span></div>}<div className={`bg-dark-900 rounded-full ${h[size]} overflow-hidden`}><div className={`${h[size]} rounded-full transition-all duration-700`} style={{width:`${p}%`,backgroundColor:color}}/></div></div>);
-};
+const CircleProgress=({value,max,color,size=120,label,sublabel})=>{const pct=max>0?Math.min(value/max*100,100):0;const r=(size-12)/2;const c=2*Math.PI*r;const off=c-(pct/100)*c;const ctr=size/2;return(<div className="text-center"><svg width={size} height={size} className="mx-auto"><circle cx={ctr} cy={ctr} r={r} fill="none" stroke="#1a1a2e" strokeWidth="8"/><circle cx={ctr} cy={ctr} r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" className="progress-ring" transform={`rotate(-90 ${ctr} ${ctr})`}/><text x={ctr} y={ctr-6} textAnchor="middle" fill="white" fontSize="18" fontWeight="bold">{value}</text><text x={ctr} y={ctr+12} textAnchor="middle" fill="#666" fontSize="10">/{max}</text></svg>{label&&<div className="text-sm font-medium text-white mt-1">{label}</div>}{sublabel&&<div className="text-xs text-gray-500">{sublabel}</div>}</div>)};
+const Heatmap=({sessions})=>{const cells=[];const now=new Date();for(let i=90;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];const mins=sessions.filter(s=>s.date===ds).reduce((a,s)=>a+(parseInt(s.dur||s.duration)||0),0);let l=0;if(mins>0)l=1;if(mins>=60)l=2;if(mins>=120)l=3;if(mins>=180)l=4;const cs=['#1a1a2e','#2d4a3e','#3d6b4f','#4d8c5f','#5dad6f'];cells.push(<div key={ds} className="heatmap-cell w-2.5 h-2.5 rounded-sm cursor-pointer" style={{backgroundColor:cs[l]}} title={`${fdf(ds)}: ${mins}dk`}/>)}return <div className="flex flex-wrap gap-0.5">{cells}</div>};
 
-const Btn=({children,onClick,v='primary',s='md',className='',disabled=false})=>{
-    const vs={primary:'bg-accent hover:bg-accent-dim text-white',success:'bg-success hover:bg-green-600 text-white',danger:'bg-danger hover:bg-red-600 text-white',ghost:'bg-transparent border border-dark-600 text-gray-400 hover:border-accent hover:text-accent',warning:'bg-warning hover:bg-yellow-600 text-dark-900'};
-    const ss={sm:'px-2.5 py-1.5 text-xs',md:'px-4 py-2 text-sm',lg:'px-5 py-2.5 text-base'};
-    return <button onClick={onClick} disabled={disabled} className={`${vs[v]} ${ss[s]} rounded-lg font-semibold transition-all disabled:opacity-50 active:scale-95 ${className}`}>{children}</button>;
-};
+const Pomodoro=({onComplete})=>{const[mode,setMode]=useState('focus');const[tl,setTl]=useState(25*60);const[run,setRun]=useState(false);const[done,setDone]=useState(0);const ref=useRef(null);useEffect(()=>{if(run&&tl>0)ref.current=setInterval(()=>setTl(t=>t-1),1000);else if(tl===0){if(mode==='focus'){setDone(d=>d+1);onComplete&&onComplete(25);setMode('break');setTl(5*60)}else{setMode('focus');setTl(25*60)}setRun(false)}return()=>clearInterval(ref.current)},[run,tl,mode]);const fmt=s=>`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;const tot=mode==='focus'?25*60:5*60;return(<div className="text-center"><div className="text-xs text-gray-500 uppercase mb-2">{mode==='focus'?'🎯 Odaklan':'☕ Mola'}</div><CircleProgress value={Math.ceil(tl/60)} max={Math.ceil(tot/60)} color={mode==='focus'?'#6c63ff':'#00c853'} size={140} label={fmt(tl)}/><div className="flex justify-center gap-3 mt-3"><Btn onClick={()=>setRun(!run)} v={run?'danger':'primary'}>{run?'⏸️':'▶️'}</Btn><Btn onClick={()=>{setTl(tot);setRun(false)}} v="ghost">🔄</Btn></div><div className="mt-2 text-sm text-gray-500">Bugün: <span className="text-accent font-bold">{done}</span> 🍅</div></div>)};
 
-const Inp=({label,type='text',value,onChange,placeholder,className=''})=>(
-    <div className={className}>{label&&<label className="block text-xs text-gray-500 mb-1">{label}</label>}<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent focus:outline-none"/></div>
-);
-const Sel=({label,value,onChange,options,className=''})=>(
-    <div className={className}>{label&&<label className="block text-xs text-gray-500 mb-1">{label}</label>}<select value={value} onChange={e=>onChange(e.target.value)} className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
-);
-const Txt=({label,value,onChange,placeholder,rows=3,className=''})=>(
-    <div className={className}>{label&&<label className="block text-xs text-gray-500 mb-1">{label}</label>}<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent focus:outline-none resize-none"/></div>
-);
-const Toast=({msg,show})=>(<div className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 bg-dark-700 border border-accent rounded-xl px-5 py-2.5 text-sm z-50 transition-all duration-300 whitespace-nowrap ${show?'opacity-100 translate-y-0':'opacity-0 translate-y-4 pointer-events-none'}`}>{msg}</div>);
-const Modal=({isOpen,onClose,title,children})=>{if(!isOpen)return null;return(<div className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={onClose}><div className="bg-dark-800 border border-dark-600 rounded-t-2xl md:rounded-2xl p-5 w-full md:max-w-lg max-h-[85vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="flex justify-between items-center mb-4"><h3 className="text-base font-semibold text-white">{title}</h3><button onClick={onClose} className="text-gray-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">×</button></div>{children}</div></div>)};
-
-// ═══════════ CIRCULAR PROGRESS ═══════════
-const CircleProgress=({value,max,color,size=120,label,sublabel})=>{
-    const pct=max>0?Math.min(value/max*100,100):0;
-    const r=(size-12)/2;const c=2*Math.PI*r;const offset=c-(pct/100)*c;
-    const center=size/2;
-    return(
-        <div className="text-center">
-            <svg width={size} height={size} className="mx-auto">
-                <circle cx={center} cy={center} r={r} fill="none" stroke="#1a1a2e" strokeWidth="8"/>
-                <circle cx={center} cy={center} r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" className="progress-ring" transform={`rotate(-90 ${center} ${center})`}/>
-                <text x={center} y={center-8} textAnchor="middle" fill="white" fontSize="20" fontWeight="bold">{value}</text>
-                <text x={center} y={center+12} textAnchor="middle" fill="#666" fontSize="11">/{max}</text>
-            </svg>
-            {label&&<div className="text-sm font-medium text-white mt-1">{label}</div>}
-            {sublabel&&<div className="text-xs text-gray-500">{sublabel}</div>}
-        </div>
-    );
-};
-
-const Heatmap=({sessions})=>{
-    const cells=[];const now=new Date();
-    for(let i=90;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];const mins=sessions.filter(s=>s.date===ds).reduce((a,s)=>a+(parseInt(s.duration)||0),0);let l=0;if(mins>0)l=1;if(mins>=60)l=2;if(mins>=120)l=3;if(mins>=180)l=4;const cs=['#1a1a2e','#2d4a3e','#3d6b4f','#4d8c5f','#5dad6f'];cells.push(<div key={ds} className="heatmap-cell w-2.5 h-2.5 md:w-3 md:h-3 rounded-sm cursor-pointer" style={{backgroundColor:cs[l]}} title={`${fdf(ds)}: ${mins} dk`}/>)}
-    return <div className="flex flex-wrap gap-0.5 md:gap-1">{cells}</div>;
-};
-
-const Pomodoro=({onComplete})=>{
-    const[mode,setMode]=useState('focus');const[tl,setTl]=useState(25*60);const[run,setRun]=useState(false);const[done,setDone]=useState(0);const ref=useRef(null);
-    useEffect(()=>{if(run&&tl>0){ref.current=setInterval(()=>setTl(t=>t-1),1000)}else if(tl===0){if(mode==='focus'){setDone(d=>d+1);onComplete&&onComplete(25);setMode('break');setTl(5*60)}else{setMode('focus');setTl(25*60)}setRun(false)}return()=>clearInterval(ref.current)},[run,tl,mode]);
-    const fmt=s=>`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
-    const tot=mode==='focus'?25*60:5*60;const pct=((tot-tl)/tot)*100;
-    return(
-        <div className="text-center">
-            <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">{mode==='focus'?'🎯 Odaklan':'☕ Mola'}</div>
-            <CircleProgress value={Math.ceil(tl/60)} max={Math.ceil(tot/60)} color={mode==='focus'?'#6c63ff':'#00c853'} size={160} label={fmt(tl)} sublabel={mode==='focus'?'dakika kaldı':'mola'}/>
-            <div className="flex justify-center gap-3 mt-4">
-                <Btn onClick={()=>setRun(!run)} v={run?'danger':'primary'}>{run?'⏸️':'▶️'}</Btn>
-                <Btn onClick={()=>{setTl(tot);setRun(false)}} v="ghost">🔄</Btn>
-            </div>
-            <div className="mt-3 text-sm text-gray-500">Bugün: <span className="text-accent font-bold">{done}</span> 🍅</div>
-        </div>
-    );
-};
-
-// ═══════════ APP ═══════════
+// ═══════════ MAIN APP ═══════════
 const App=()=>{
     const[pg,setPg]=useState('dashboard');
     const[toast,setToast]=useState({show:false,msg:''});
     const[modal,setModal]=useState({open:false,type:null});
+    const[notifEnabled,setNotifEnabled]=useState(S.g('notifEnabled',false));
+    const[notifTimes,setNotifTimes]=useState(S.g('notifTimes',{morning:true,noon:true,study:true,evening:true,review:true,night:true}));
 
     const[sessions,setSessions]=useState(S.g('sessions',[]));
     const[exams,setExams]=useState(S.g('exams',[]));
@@ -236,10 +275,9 @@ const App=()=>{
     const[sF,setSF]=useState({subject:'matematik',topic:'',qc:'',dur:'',correct:'',wrong:'',diff:'orta',focus:'3',energy:'3',sleep:'',notes:''});
     const[eF,setEF]=useState({type:'TYT',tD:'',tY:'',mD:'',mY:'',fD:'',fY:'',sD:'',sY:''});
     const[mF,setMF]=useState({subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi'});
-    const[rF,setRF]=useState({hard:'',best:'',hours:'',focus:''});
-    const[dF,setDF]=useState({learned:'',hard:'',tomorrow:''});
     const[tI,setTI]=useState({text:'',subject:'matematik'});
 
+    // Persist
     useEffect(()=>{S.s('sessions',sessions)},[sessions]);
     useEffect(()=>{S.s('exams',exams)},[exams]);
     useEffect(()=>{S.s('mistakes',mistakes)},[mistakes]);
@@ -250,18 +288,37 @@ const App=()=>{
     useEffect(()=>{S.s('tasks',tasks)},[tasks]);
     useEffect(()=>{S.s('xp',xp)},[xp]);
     useEffect(()=>{S.s('pyDone',pyDone)},[pyDone]);
+    useEffect(()=>{S.s('notifEnabled',notifEnabled)},[notifEnabled]);
+    useEffect(()=>{S.s('notifTimes',notifTimes)},[notifTimes]);
 
-    // Auto-generate daily tasks
+    // Auto tasks
+    useEffect(()=>{const t=td();if(!tasks.some(x=>x.date===t))setTasks(p=>[...p,...genTasks(t)])},[]);
+
+    // ═══════════ NOTIFICATION SYSTEM ═══════════
     useEffect(()=>{
-        const today=td();
-        const hasTodayTasks=tasks.some(t=>t.date===today);
-        if(!hasTodayTasks){
-            setTasks(prev=>[...prev,...generateDailyTasks(today)]);
+        if(!notifEnabled)return;
+        const check=()=>NotifManager.scheduleCheck(sessions,tasks,goals);
+        check();
+        const interval=setInterval(check,60000); // Her dakika kontrol
+        return()=>clearInterval(interval);
+    },[notifEnabled,sessions,tasks]);
+
+    const enableNotifications=async()=>{
+        const granted=await NotifManager.requestPermission();
+        if(granted){
+            setNotifEnabled(true);
+            notify('🔔 Bildirimler açıldı!');
+            // Test bildirimi
+            setTimeout(()=>{
+                NotifManager.send('✅ Bildirimler Aktif!','YKS Merkezi sana günde 6 kez hatırlatma yapacak. Hadi çalış! 💪','test');
+            },1000);
+        }else{
+            notify('❌ Bildirim izni reddedildi. Tarayıcı ayarlarından aç.');
         }
-    },[]);
+    };
 
     const notify=m=>{setToast({show:true,msg:m});setTimeout(()=>setToast({show:false,msg:''}),2500)};
-    const addXp=a=>{setXp(p=>p+a)};
+    const addXp=a=>setXp(p=>p+a);
 
     const today=td();
     const tSess=sessions.filter(s=>s.date===today);
@@ -271,373 +328,197 @@ const App=()=>{
     const tTasksDone=tTasks.filter(t=>t.completed).length;
 
     const streak=(()=>{let s=0;const d=new Date();while(true){const ds=d.toISOString().split('T')[0];const has=sessions.some(x=>x.date===ds);if(!has&&ds!==today)break;if(has)s++;d.setDate(d.getDate()-1)}return s})();
-    const sInfo=gs(streak);
-    const lvl=gl(xp);const nLvl=nl(xp);
-    const lvlPct=nLvl.min>lvl.min?((xp-lvl.min)/(nLvl.min-lvl.min))*100:100;
-
+    const sInfo=gs(streak);const lvl=gl(xp);const nLvl=nl(xp);const lvlPct=nLvl.min>lvl.min?((xp-lvl.min)/(nLvl.min-lvl.min))*100:100;
     const mufSt=id=>{const m=MUF.find(x=>x.id===id);if(!m)return{t:0,m:0};const all=[...m.d1,...m.d2];const sp=topics[id]||{};return{t:all.length,m:all.filter(t=>sp[t]==='mastered').length}};
     const totalMuf=()=>{let t=0,m=0;MUF.forEach(x=>{const s=mufSt(x.id);t+=s.t;m+=s.m});return t>0?Math.round(m/t*100):0};
     const qBySub=id=>sessions.filter(s=>s.subject===id).reduce((a,s)=>a+(parseInt(s.qc||s.questionCount)||0),0);
     const weakTopics=()=>{const tm={};mistakes.forEach(m=>{const k=m.subject+'|||'+m.topic;tm[k]=(tm[k]||0)+1});return Object.entries(tm).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,c])=>{const[s,t]=k.split('|||');return{subject:s,topic:t,count:c}})};
+    const weekReport=()=>{const days=l7();const ws=sessions.filter(s=>days.includes(s.date));const mins=ws.reduce((a,s)=>a+(parseInt(s.dur||s.duration)||0),0);const q=ws.reduce((a,s)=>a+(parseInt(s.qc||s.questionCount)||0),0);const st={};ws.forEach(s=>{st[s.subject]=(st[s.subject]||0)+(parseInt(s.dur||s.duration)||0)});const sorted=Object.entries(st).sort((a,b)=>b[1]-a[1]);const strong=sorted[0]?SUBS.find(s=>s.id===sorted[0][0])?.name:'—';const weak=sorted.length>1?SUBS.find(s=>s.id===sorted[sorted.length-1][0])?.name:'—';let tip='';if(mins<600)tip='⚠️ Çalışma süren düşük! Günde 4 saat hedefle.';else if(mins<1200)tip='📈 İyi ama daha fazla soru çöz.';else tip='🔥 Harika! Tempoyu koru!';return{mins,q,strong,weak,tip}};
 
-    const weekReport=()=>{
-        const days=l7();const ws=sessions.filter(s=>days.includes(s.date));
-        const mins=ws.reduce((a,s)=>a+(parseInt(s.dur||s.duration)||0),0);
-        const q=ws.reduce((a,s)=>a+(parseInt(s.qc||s.questionCount)||0),0);
-        const st={};ws.forEach(s=>{st[s.subject]=(st[s.subject]||0)+(parseInt(s.dur||s.duration)||0)});
-        const sorted=Object.entries(st).sort((a,b)=>b[1]-a[1]);
-        const strong=sorted[0]?SUBS.find(s=>s.id===sorted[0][0])?.name:'—';
-        const weak=sorted.length>1?SUBS.find(s=>s.id===sorted[sorted.length-1][0])?.name:'—';
-        let tip='';if(mins<600)tip='⚠️ Çalışma süren çok düşük! Günde en az 4 saat hedefle.';else if(mins<1200)tip='📈 İyi gidiyorsun ama daha fazla soru çöz.';else tip='🔥 Harika hafta! Tempoyu koru!';
-        return{mins,q,strong,weak,tip};
-    };
+    const goalStatus=tQ>=DG_IDEAL?'ideal':tQ>=DG_MIN?'ok':'low';
 
-    // Goal warning
-    const goalWarning=tQ<DAILY_GOAL_MIN&&tMins>0;
-    const goalStatus=tQ>=DAILY_GOAL_IDEAL?'ideal':tQ>=DAILY_GOAL_MIN?'ok':'low';
-
-    // Handlers
-    const addSession=()=>{
-        if(!sF.topic||!sF.dur){notify('⚠️ Konu ve süre gerekli!');return}
-        const newS={...sF,id:Date.now(),date:today,duration:sF.dur,questionCount:sF.qc};
-        setSessions(p=>[...p,newS]);
-        const q=parseInt(sF.qc)||0;let bonus=5;if(q>=50)bonus=20;if(q>=100)bonus=50;if(q>0)addXp(bonus);
-        setSF({subject:'matematik',topic:'',qc:'',dur:'',correct:'',wrong:'',diff:'orta',focus:'3',energy:'3',sleep:'',notes:''});
-        notify(`✅ Kaydedildi! +${bonus} XP`);setModal({open:false,type:null});
-    };
-
-    const addExam=()=>{
-        const tD=parseInt(eF.tD)||0,tY=parseInt(eF.tY)||0,mD=parseInt(eF.mD)||0,mY=parseInt(eF.mY)||0;
-        const fD=parseInt(eF.fD)||0,fY=parseInt(eF.fY)||0,sD=parseInt(eF.sD)||0,sY=parseInt(eF.sY)||0;
-        const tN=cn(tD,tY),mN=cn(mD,mY),fN=cn(fD,fY),sN=cn(sD,sY),tot=tN+mN+fN+sN;
-        const nets=[{n:'Türkçe',v:tN},{n:'Mat',v:mN},{n:'Fen',v:fN},{n:'Sosyal',v:sN}];
-        const weak=nets.reduce((a,b)=>a.v<b.v?a:b).n;
-        setExams(p=>[...p,{id:Date.now(),date:today,type:eF.type,tD,tY,tN,mD,mY,mN,fD,fY,fN,sD,sY,sN,tot,weak}]);
-        setEF({type:'TYT',tD:'',tY:'',mD:'',mY:'',fD:'',fY:'',sD:'',sY:''});
-        addXp(25);notify('✅ Deneme kaydedildi! +25 XP');setModal({open:false,type:null});
-    };
-
-    const addMistake=()=>{
-        if(!mF.topic||!mF.desc){notify('⚠️ Gerekli!');return}
-        setMistakes(p=>[...p,{...mF,id:Date.now(),date:today,description:mF.desc,correctLogic:mF.logic}]);
-        setMF({subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi'});
-        addXp(5);notify('📕 Eklendi! +5 XP');setModal({open:false,type:null});
-    };
-
-    const toggleTask=id=>{setTasks(p=>p.map(t=>{if(t.id===id&&!t.completed){addXp(t.xp);notify(`✅ +${t.xp} XP!`);return{...t,completed:true}}return t}))};
-    const handlePomo=m=>{setSessions(p=>[...p,{id:Date.now(),date:today,subject:'genel',topic:'Pomodoro',duration:m,questionCount:0}]);addXp(15);notify('🍅 +15 XP!')};
+    const addSession=()=>{if(!sF.topic||!sF.dur){notify('⚠️ Konu ve süre!');return}setSessions(p=>[...p,{...sF,id:Date.now(),date:today,duration:sF.dur,questionCount:sF.qc}]);const q=parseInt(sF.qc)||0;let b=5;if(q>=50)b=20;if(q>=100)b=50;if(q>0)addXp(b);setSF({subject:'matematik',topic:'',qc:'',dur:'',correct:'',wrong:'',diff:'orta',focus:'3',energy:'3',sleep:'',notes:''});notify(`✅ +${b} XP!`);setModal({open:false,type:null})};
+    const addExam=()=>{const tD=parseInt(eF.tD)||0,tY=parseInt(eF.tY)||0,mD=parseInt(eF.mD)||0,mY=parseInt(eF.mY)||0,fD=parseInt(eF.fD)||0,fY=parseInt(eF.fY)||0,sD=parseInt(eF.sD)||0,sY=parseInt(eF.sY)||0;const tN=cn(tD,tY),mN=cn(mD,mY),fN=cn(fD,fY),sN=cn(sD,sY),tot=tN+mN+fN+sN;const weak=[{n:'Türkçe',v:tN},{n:'Mat',v:mN},{n:'Fen',v:fN},{n:'Sos',v:sN}].reduce((a,b)=>a.v<b.v?a:b).n;setExams(p=>[...p,{id:Date.now(),date:today,type:eF.type,tD,tY,tN,mD,mY,mN,fD,fY,fN,sD,sY,sN,tot,weak}]);setEF({type:'TYT',tD:'',tY:'',mD:'',mY:'',fD:'',fY:'',sD:'',sY:''});addXp(25);notify('✅ +25 XP!');setModal({open:false,type:null})};
+    const addMistake=()=>{if(!mF.topic||!mF.desc){notify('⚠️ Gerekli!');return}setMistakes(p=>[...p,{...mF,id:Date.now(),date:today,description:mF.desc,correctLogic:mF.logic}]);setMF({subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi'});addXp(5);notify('📕 +5 XP!');setModal({open:false,type:null})};
+    const toggleTask=id=>setTasks(p=>p.map(t=>{if(t.id===id&&!t.completed){addXp(t.xp);notify(`✅ +${t.xp} XP!`);return{...t,completed:true}}return t}));
+    const handlePomo=m=>{setSessions(p=>[...p,{id:Date.now(),date:today,subject:'genel',topic:'Pomodoro',dur:m,qc:0}]);addXp(15);notify('🍅 +15 XP!')};
 
     // ═══════════ DASHBOARD ═══════════
     const Dashboard=()=>{
-        const wr=weekReport();
-        const lastE=[...exams].sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+        const wr=weekReport();const lastE=[...exams].sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
         const c1=useRef(null);const c2=useRef(null);const i1=useRef(null);const i2=useRef(null);
-
-        useEffect(()=>{
-            const days=l7();
-            if(c1.current){if(i1.current)i1.current.destroy();i1.current=new Chart(c1.current,{type:'bar',data:{labels:days.map(d=>fd(d)),datasets:[{label:'dk',data:days.map(d=>sessions.filter(s=>s.date===d).reduce((a,s)=>a+(parseInt(s.dur||s.duration)||0),0)),backgroundColor:'#6c63ff88',borderColor:'#6c63ff',borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#555',font:{size:10}}},x:{ticks:{color:'#555',font:{size:10}}}}}})}
-            if(c2.current){if(i2.current)i2.current.destroy();i2.current=new Chart(c2.current,{type:'bar',data:{labels:days.map(d=>fd(d)),datasets:[{label:'Soru',data:days.map(d=>sessions.filter(s=>s.date===d).reduce((a,s)=>a+(parseInt(s.qc||s.questionCount)||0),0)),backgroundColor:'#00c85388',borderColor:'#00c853',borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#555',font:{size:10}}},x:{ticks:{color:'#555',font:{size:10}}}}}})}
+        useEffect(()=>{const days=l7();if(c1.current){if(i1.current)i1.current.destroy();i1.current=new Chart(c1.current,{type:'bar',data:{labels:days.map(d=>fd(d)),datasets:[{data:days.map(d=>sessions.filter(s=>s.date===d).reduce((a,s)=>a+(parseInt(s.dur||s.duration)||0),0)),backgroundColor:'#6c63ff88',borderColor:'#6c63ff',borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#555',font:{size:9}}},x:{ticks:{color:'#555',font:{size:9}}}}}})}if(c2.current){if(i2.current)i2.current.destroy();i2.current=new Chart(c2.current,{type:'bar',data:{labels:days.map(d=>fd(d)),datasets:[{data:days.map(d=>sessions.filter(s=>s.date===d).reduce((a,s)=>a+(parseInt(s.qc||s.questionCount)||0),0)),backgroundColor:'#00c85388',borderColor:'#00c853',borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#555',font:{size:9}}},x:{ticks:{color:'#555',font:{size:9}}}}}})}
         },[sessions]);
 
-        return(
-            <div className="space-y-4">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div><h1 className="text-xl md:text-2xl font-bold text-white">Merhaba, Mehmet Zeki 👋</h1><p className="text-gray-500 text-xs md:text-sm">İTÜ Bilgisayar Mühendisliği • İlk 1000</p></div>
-                    <div className="flex items-center gap-3">
-                        <div className="bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-center">
-                            <div className="text-xs text-gray-500">{lvl.i} {lvl.n}</div>
-                            <div className="text-base font-bold text-accent">{xp} XP</div>
-                            <div className="w-20 bg-dark-900 rounded-full h-1 mt-1"><div className="h-1 rounded-full bg-accent xp-fill" style={{width:`${lvlPct}%`}}/></div>
-                        </div>
-                        <div className="bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-center">
-                            <span className={`text-xl ${streak>0?'streak-flame':''}`}>🔥</span>
-                            <div className="text-lg font-bold text-warning">{streak}</div>
-                            <div className="text-xs text-gray-500">{sInfo.t}</div>
-                        </div>
+        return(<div className="space-y-4">
+            {/* Bildirim Banner */}
+            {!notifEnabled&&(
+                <div className="bg-accent/10 border border-accent/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-3"><span className="text-2xl">🔔</span><div><div className="text-sm font-semibold text-white">Bildirimleri Aç!</div><div className="text-xs text-gray-400">Günde 6 hatırlatma alırsın: sabah, öğle, akşam...</div></div></div>
+                    <Btn onClick={enableNotifications} v="primary" s="sm">🔔 Bildirimleri Aç</Btn>
+                </div>
+            )}
+
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div><h1 className="text-xl font-bold text-white">Merhaba, Mehmet Zeki 👋</h1><p className="text-gray-500 text-xs">İTÜ BM • İlk 1000</p></div>
+                <div className="flex items-center gap-3">
+                    <div className="bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-center"><div className="text-xs text-gray-500">{lvl.i} {lvl.n}</div><div className="text-base font-bold text-accent">{xp} XP</div><div className="w-20 bg-dark-900 rounded-full h-1 mt-1"><div className="h-1 rounded-full bg-accent xp-fill" style={{width:`${lvlPct}%`}}/></div></div>
+                    <div className="bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-center"><span className={`text-xl ${streak>0?'streak-flame':''}`}>🔥</span><div className="text-lg font-bold text-warning">{streak}</div><div className="text-xs text-gray-500">{sInfo.t}</div></div>
+                </div>
+            </div>
+
+            {/* Daily Goal */}
+            <Card className={goalStatus==='low'&&tMins>0?'border-danger/50 warning-pulse':goalStatus==='ideal'?'border-success/50 glow':''}>
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                    <CircleProgress value={tQ} max={DG_IDEAL} color={goalStatus==='ideal'?'#00c853':goalStatus==='ok'?'#6c63ff':'#ff5252'} size={100} label="Günlük Soru"/>
+                    <div className="flex-1 w-full">
+                        <div className="flex justify-between text-sm mb-1"><span className="text-gray-400">İlerleme</span><span className={goalStatus==='ideal'?'text-success font-bold':goalStatus==='ok'?'text-accent':'text-danger'}>{tQ}/{DG_IDEAL}</span></div>
+                        <div className="relative"><PBar value={tQ} max={DG_IDEAL} color={goalStatus==='ideal'?'#00c853':goalStatus==='ok'?'#6c63ff':'#ff5252'} label={false} size="xl"/><div className="absolute top-0 bottom-0 w-0.5 bg-warning/60" style={{left:`${(DG_MIN/DG_IDEAL)*100}%`}}/></div>
+                        <div className="flex justify-between text-xs mt-1"><span className="text-gray-600">0</span><span className="text-warning">Min:{DG_MIN}</span><span className="text-success">İdeal:{DG_IDEAL}</span></div>
+                        {goalStatus==='low'&&tMins>0&&<div className="mt-2 bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 text-xs text-danger">⚠️ {tQ} soru çözdün. Minimum: {DG_MIN}!</div>}
+                        {goalStatus==='ideal'&&<div className="mt-2 bg-success/10 border border-success/30 rounded-lg px-3 py-2 text-xs text-success">🎉 Hedefe ulaştın! 🏆</div>}
+                        <div className="flex gap-4 mt-3"><div className="text-center"><div className="text-lg font-bold text-white">{tMins}</div><div className="text-xs text-gray-500">dakika</div></div><div className="text-center"><div className="text-lg font-bold text-white">{tQ}</div><div className="text-xs text-gray-500">soru</div></div><div className="text-center"><div className="text-lg font-bold text-accent">{Math.ceil((new Date('2027-06-19')-new Date())/864e5)}</div><div className="text-xs text-gray-500">YKS</div></div></div>
                     </div>
                 </div>
+            </Card>
 
-                {/* Daily Goal Progress - NEW! */}
-                <Card className={goalStatus==='low'&&tMins>0?'border-danger/50 warning-pulse':goalStatus==='ideal'?'border-success/50 glow':''}>
-                    <div className="flex flex-col md:flex-row items-center gap-4">
-                        <CircleProgress value={tQ} max={DAILY_GOAL_IDEAL} color={goalStatus==='ideal'?'#00c853':goalStatus==='ok'?'#6c63ff':'#ff5252'} size={110} label="Günlük Soru" sublabel={`Hedef: ${DAILY_GOAL_IDEAL}`}/>
-                        <div className="flex-1 w-full">
-                            <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-400">Soru İlerlemesi</span>
-                                <span className={goalStatus==='ideal'?'text-success font-bold':goalStatus==='ok'?'text-accent':'text-danger'}>{tQ} / {DAILY_GOAL_IDEAL}</span>
-                            </div>
-                            <div className="relative">
-                                <PBar value={tQ} max={DAILY_GOAL_IDEAL} color={goalStatus==='ideal'?'#00c853':goalStatus==='ok'?'#6c63ff':'#ff5252'} label={false} size="xl"/>
-                                {/* Min line */}
-                                <div className="absolute top-0 bottom-0 w-0.5 bg-warning/60" style={{left:`${(DAILY_GOAL_MIN/DAILY_GOAL_IDEAL)*100}%`}}/>
-                            </div>
-                            <div className="flex justify-between text-xs mt-1">
-                                <span className="text-gray-600">0</span>
-                                <span className="text-warning">Min: {DAILY_GOAL_MIN}</span>
-                                <span className="text-success">İdeal: {DAILY_GOAL_IDEAL}</span>
-                            </div>
-                            {/* Warning */}
-                            {goalStatus==='low'&&tMins>0&&(
-                                <div className="mt-2 bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 text-xs text-danger">
-                                    ⚠️ Bugün {tQ} soru çözdün. Minimum hedef: {DAILY_GOAL_MIN}. Hadi devam et!
-                                </div>
-                            )}
-                            {goalStatus==='ideal'&&(
-                                <div className="mt-2 bg-success/10 border border-success/30 rounded-lg px-3 py-2 text-xs text-success">
-                                    🎉 Günlük hedefe ulaştın! Sen bir makinesin!
-                                </div>
-                            )}
-                            {/* Time */}
-                            <div className="flex gap-4 mt-3">
-                                <div className="text-center"><div className="text-lg font-bold text-white">{tMins}</div><div className="text-xs text-gray-500">dakika</div></div>
-                                <div className="text-center"><div className="text-lg font-bold text-white">{tQ}</div><div className="text-xs text-gray-500">soru</div></div>
-                                <div className="text-center"><div className="text-lg font-bold text-accent">{Math.ceil((new Date('2027-06-19')-new Date())/864e5)}</div><div className="text-xs text-gray-500">YKS</div></div>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
+            {/* Tasks */}
+            <Card title="✅ Bugünün Görevleri" subtitle={`${tTasksDone}/${tTasks.length}`} action={<Btn onClick={()=>setModal({open:true,type:'task'})} s="sm">+</Btn>}>
+                <PBar value={tTasksDone} max={tTasks.length} color="#00c853" label={false} size="sm"/>
+                <div className="space-y-2 mt-3">{tTasks.map(t=>(<div key={t.id} className={`flex items-center gap-3 bg-dark-700 rounded-lg px-3 py-2.5 ${t.completed?'opacity-40':''}`}><input type="checkbox" checked={t.completed} onChange={()=>toggleTask(t.id)} className="w-5 h-5 rounded accent-accent cursor-pointer"/><span className={`text-sm flex-1 ${t.completed?'line-through text-gray-500':'text-white'}`}>{t.text}</span><span className="text-xs text-accent">+{t.xp}</span><button onClick={()=>setTasks(tasks.filter(x=>x.id!==t.id))} className="text-gray-600 hover:text-danger">×</button></div>))}</div>
+            </Card>
 
-                {/* Daily Tasks */}
-                <Card title="✅ Bugünün Görevleri" subtitle={`${tTasksDone}/${tTasks.length} tamamlandı`} action={<Btn onClick={()=>setModal({open:true,type:'task'})} s="sm">+</Btn>}>
-                    <PBar value={tTasksDone} max={tTasks.length} color="#00c853" label={false} size="sm"/>
-                    <div className="space-y-2 mt-3">
-                        {tTasks.map(t=>(
-                            <div key={t.id} className={`flex items-center gap-3 bg-dark-700 rounded-lg px-3 py-2.5 ${t.completed?'opacity-40':''}`}>
-                                <input type="checkbox" checked={t.completed} onChange={()=>toggleTask(t.id)} className="w-5 h-5 rounded accent-accent cursor-pointer flex-shrink-0"/>
-                                <span className={`text-sm flex-1 ${t.completed?'line-through text-gray-500':'text-white'}`}>{t.text}</span>
-                                <span className="text-xs text-accent">+{t.xp}</span>
-                                <button onClick={()=>setTasks(tasks.filter(x=>x.id!==t.id))} className="text-gray-600 hover:text-danger text-sm">×</button>
-                            </div>
+            {/* Charts */}
+            <div className="grid md:grid-cols-2 gap-4">
+                <Card title="📊 Çalışma Süresi"><div style={{height:'150px'}}><canvas ref={c1}></canvas></div></Card>
+                <Card title="📈 Soru Sayısı"><div style={{height:'150px'}}><canvas ref={c2}></canvas></div></Card>
+            </div>
+
+            {/* Weekly Report */}
+            <Card title="📋 Haftalık Rapor">
+                <div className="grid grid-cols-4 gap-2 mb-3">{[{v:`${Math.round(wr.mins/60)}s`,l:'Çalışma',c:'text-accent'},{v:wr.q,l:'Soru',c:'text-success'},{v:wr.strong,l:'Güçlü',c:'text-warning'},{v:wr.weak,l:'Zayıf',c:'text-danger'}].map((x,i)=><div key={i} className="bg-dark-700 rounded-lg p-2 text-center"><div className={`text-lg font-bold ${x.c}`}>{x.v}</div><div className="text-xs text-gray-500">{x.l}</div></div>)}</div>
+                <div className="bg-dark-700 rounded-lg p-3 text-sm">{wr.tip}</div>
+            </Card>
+
+            {/* Müfredat + Heatmap */}
+            <div className="grid md:grid-cols-2 gap-4">
+                <Card title="📚 Müfredat" subtitle={`%${totalMuf()}`}><div className="space-y-2">{MUF.map(m=>{const s=mufSt(m.id);return <div key={m.id} className="flex items-center gap-2"><span className="text-xs w-14 truncate" style={{color:m.color}}>{m.name}</span><div className="flex-1"><PBar value={s.m} max={s.t} color={m.color} label={false} size="sm"/></div><span className="text-xs text-gray-500 w-8 text-right">{s.m}/{s.t}</span></div>})}</div></Card>
+                <Card title="🗓️ Harita"><Heatmap sessions={sessions}/></Card>
+            </div>
+
+            {/* Weak + Exam */}
+            <div className="grid md:grid-cols-2 gap-4">
+                <Card title="⚠️ Zayıf Konular">{weakTopics().length===0?<p className="text-gray-500 text-sm">Kara Deftere ekle!</p>:<div className="space-y-2">{weakTopics().map((t,i)=><div key={i} className="flex justify-between text-sm"><div><span className="text-xs px-2 py-0.5 rounded-full mr-1" style={{backgroundColor:SUBS.find(s=>s.id===t.subject)?.color+'22',color:SUBS.find(s=>s.id===t.subject)?.color}}>{SUBS.find(s=>s.id===t.subject)?.name}</span>{t.topic}</div><span className="text-danger font-bold">{t.count}×</span></div>)}</div>}</Card>
+                {lastE&&<Card title="📊 Son Deneme" subtitle={fd(lastE.date)}><div className="grid grid-cols-5 gap-2 text-center">{[{n:'Tür',v:lastE.tN},{n:'Mat',v:lastE.mN},{n:'Fen',v:lastE.fN},{n:'Sos',v:lastE.sN},{n:'TOP',v:lastE.tot}].map((x,i)=><div key={i}><div className="text-xs text-gray-500">{x.n}</div><div className={`text-lg font-bold ${i===4?'text-accent':'text-white'}`}>{x.v?.toFixed(1)}</div></div>)}</div></Card>}
+            </div>
+
+            {/* Notification Settings */}
+            {notifEnabled&&(
+                <Card title="🔔 Bildirim Ayarları" subtitle="Hangi saatlerde hatırlatma gelsin?">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {[{k:'morning',l:'08:00 Günaydın',i:'☀️'},{k:'noon',l:'12:00 Öğle',i:'🕐'},{k:'study',l:'16:15 Çalışma',i:'📚'},{k:'evening',l:'19:00 Akşam',i:'🌆'},{k:'review',l:'21:30 Değerlendirme',i:'📝'},{k:'night',l:'23:00 İyi Geceler',i:'🌙'}].map(n=>(
+                            <label key={n.k} className={`flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2.5 cursor-pointer border ${notifTimes[n.k]?'border-accent/50':'border-dark-600'}`}>
+                                <input type="checkbox" checked={notifTimes[n.k]||false} onChange={e=>setNotifTimes(p=>({...p,[n.k]:e.target.checked}))} className="accent-accent"/>
+                                <span className="text-sm">{n.i} {n.l}</span>
+                            </label>
                         ))}
                     </div>
-                </Card>
-
-                {/* Charts */}
-                <div className="grid md:grid-cols-2 gap-4">
-                    <Card title="📊 Çalışma Süresi" subtitle="Son 7 gün"><div style={{height:'160px'}}><canvas ref={c1}></canvas></div></Card>
-                    <Card title="📈 Soru Sayısı" subtitle="Son 7 gün"><div style={{height:'160px'}}><canvas ref={c2}></canvas></div></Card>
-                </div>
-
-                {/* Weekly Report */}
-                <Card title="📋 Haftalık Rapor">
-                    <div className="grid grid-cols-4 gap-2 mb-3">
-                        <div className="bg-dark-700 rounded-lg p-2 text-center"><div className="text-lg font-bold text-accent">{Math.round(wr.mins/60)}s</div><div className="text-xs text-gray-500">Çalışma</div></div>
-                        <div className="bg-dark-700 rounded-lg p-2 text-center"><div className="text-lg font-bold text-success">{wr.q}</div><div className="text-xs text-gray-500">Soru</div></div>
-                        <div className="bg-dark-700 rounded-lg p-2 text-center"><div className="text-lg font-bold text-warning">{wr.strong}</div><div className="text-xs text-gray-500">Güçlü</div></div>
-                        <div className="bg-dark-700 rounded-lg p-2 text-center"><div className="text-lg font-bold text-danger">{wr.weak}</div><div className="text-xs text-gray-500">Zayıf</div></div>
+                    <div className="mt-3 flex gap-2">
+                        <Btn onClick={()=>{NotifManager.send('🔔 Test Bildirimi',`Bu bir test. Bugün ${tQ} soru çözdün! 💪`,'test');notify('🔔 Test gönderildi!')}} v="ghost" s="sm">🔔 Test Gönder</Btn>
+                        <Btn onClick={()=>{setNotifEnabled(false);notify('🔕 Bildirimler kapatıldı')}} v="danger" s="sm">Kapat</Btn>
                     </div>
-                    <div className="bg-dark-700 rounded-lg p-3 text-sm">{wr.tip}</div>
                 </Card>
-
-                {/* Müfredat + Heatmap */}
-                <div className="grid md:grid-cols-2 gap-4">
-                    <Card title="📚 Müfredat" subtitle={`%${totalMuf()} tamamlandı`}>
-                        <div className="space-y-2">{MUF.map(m=>{const s=mufSt(m.id);return(<div key={m.id} className="flex items-center gap-2"><span className="text-xs w-16 truncate" style={{color:m.color}}>{m.name}</span><div className="flex-1"><PBar value={s.m} max={s.t} color={m.color} label={false} size="sm"/></div><span className="text-xs text-gray-500 w-10 text-right">{s.m}/{s.t}</span></div>)})}</div>
-                    </Card>
-                    <Card title="🗓️ Çalışma Haritası"><Heatmap sessions={sessions}/></Card>
-                </div>
-
-                {/* Weak + Last Exam */}
-                <div className="grid md:grid-cols-2 gap-4">
-                    <Card title="⚠️ Zayıf Konular">
-                        {weakTopics().length===0?<p className="text-gray-500 text-sm">Kara Deftere hata ekle!</p>:(
-                            <div className="space-y-2">{weakTopics().map((t,i)=>(
-                                <div key={i} className="flex justify-between items-center text-sm"><div><span className="text-xs px-2 py-0.5 rounded-full mr-1" style={{backgroundColor:SUBS.find(s=>s.id===t.subject)?.color+'22',color:SUBS.find(s=>s.id===t.subject)?.color}}>{SUBS.find(s=>s.id===t.subject)?.name}</span>{t.topic}</div><span className="text-danger font-bold">{t.count}×</span></div>
-                            ))}</div>
-                        )}
-                    </Card>
-                    {lastE&&(
-                        <Card title="📊 Son Deneme" subtitle={fd(lastE.date)}>
-                            <div className="grid grid-cols-5 gap-2 text-center">
-                                {[{n:'Tür',v:lastE.tN},{n:'Mat',v:lastE.mN},{n:'Fen',v:lastE.fN},{n:'Sos',v:lastE.sN},{n:'TOP',v:lastE.tot}].map((x,i)=>(
-                                    <div key={i}><div className="text-xs text-gray-500">{x.n}</div><div className={`text-lg font-bold ${i===4?'text-accent':'text-white'}`}>{x.v?.toFixed(1)}</div></div>
-                                ))}
-                            </div>
-                            {lastE.weak&&<div className="mt-2 text-xs text-danger">⚠️ Zayıf: {lastE.weak}</div>}
-                        </Card>
-                    )}
-                </div>
-            </div>
-        );
+            )}
+        </div>);
     };
 
-    // ═══ STUDY ═══
-    const StudyPg=()=>(
-        <div className="space-y-4">
-            <div className="flex justify-between items-center"><h1 className="text-xl font-bold text-white">📚 Çalışma</h1><Btn onClick={()=>setModal({open:true,type:'session'})}>+ Ekle</Btn></div>
-            <div className="grid md:grid-cols-2 gap-4">
-                <Card title="🍅 Pomodoro"><Pomodoro onComplete={handlePomo}/></Card>
-                <Card title="📊 Ders Bazlı Soru"><div className="grid grid-cols-3 gap-2">{SUBS.slice(0,9).map(s=><div key={s.id} className="bg-dark-700 rounded-lg p-2 text-center"><div className="text-lg font-bold" style={{color:s.color}}>{qBySub(s.id)}</div><div className="text-xs text-gray-500">{s.name}</div></div>)}</div></Card>
-            </div>
-            <Card title="📋 Son Çalışmalar">{sessions.length===0?<p className="text-gray-500 text-center py-4">Kayıt yok</p>:<div className="space-y-2 max-h-80 overflow-y-auto">{[...sessions].sort((a,b)=>b.id-a.id).slice(0,20).map(s=><div key={s.id} className="bg-dark-700 rounded-lg p-2.5 flex justify-between items-center"><div><div className="flex items-center gap-2 flex-wrap"><span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor:SUBS.find(x=>x.id===s.subject)?.color+'22',color:SUBS.find(x=>x.id===s.subject)?.color}}>{SUBS.find(x=>x.id===s.subject)?.name||s.subject}</span><span className="text-sm font-medium">{s.topic}</span></div><div className="text-xs text-gray-500 mt-1">{fd(s.date)} • {s.dur||s.duration}dk • {s.qc||s.questionCount||0} soru</div></div><button onClick={()=>setSessions(sessions.filter(x=>x.id!==s.id))} className="text-gray-600 hover:text-danger">×</button></div>)}</div>}</Card>
-        </div>
-    );
+    // ═══ OTHER PAGES (Compact) ═══
+    const StudyPg=()=>(<div className="space-y-4"><div className="flex justify-between items-center"><h1 className="text-xl font-bold text-white">📚 Çalışma</h1><Btn onClick={()=>setModal({open:true,type:'session'})}>+ Ekle</Btn></div><div className="grid md:grid-cols-2 gap-4"><Card title="🍅 Pomodoro"><Pomodoro onComplete={handlePomo}/></Card><Card title="📊 Ders Soru"><div className="grid grid-cols-3 gap-2">{SUBS.slice(0,9).map(s=><div key={s.id} className="bg-dark-700 rounded-lg p-2 text-center"><div className="text-lg font-bold" style={{color:s.color}}>{qBySub(s.id)}</div><div className="text-xs text-gray-500">{s.name}</div></div>)}</div></Card></div><Card title="📋 Son Çalışmalar">{sessions.length===0?<p className="text-gray-500 text-center py-4">Yok</p>:<div className="space-y-2 max-h-80 overflow-y-auto">{[...sessions].sort((a,b)=>b.id-a.id).slice(0,20).map(s=><div key={s.id} className="bg-dark-700 rounded-lg p-2.5 flex justify-between items-center"><div><div className="flex items-center gap-2 flex-wrap"><span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor:SUBS.find(x=>x.id===s.subject)?.color+'22',color:SUBS.find(x=>x.id===s.subject)?.color}}>{SUBS.find(x=>x.id===s.subject)?.name||s.subject}</span><span className="text-sm">{s.topic}</span></div><div className="text-xs text-gray-500 mt-1">{fd(s.date)} • {s.dur||s.duration}dk • {s.qc||s.questionCount||0} soru</div></div><button onClick={()=>setSessions(sessions.filter(x=>x.id!==s.id))} className="text-gray-600 hover:text-danger">×</button></div>)}</div>}</Card></div>);
 
-    // ═══ EXAMS ═══
-    const ExamPg=()=>{
-        const cr=useRef(null);const ci=useRef(null);
-        useEffect(()=>{if(cr.current&&exams.length>0){if(ci.current)ci.current.destroy();const sorted=[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(-10);ci.current=new Chart(cr.current,{type:'line',data:{labels:sorted.map(e=>fd(e.date)),datasets:[{label:'Toplam',data:sorted.map(e=>e.tot),borderColor:'#6c63ff',backgroundColor:'#6c63ff22',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#555'}},x:{ticks:{color:'#555'}}}}})}},[exams]);
-        return(
-            <div className="space-y-4">
-                <div className="flex justify-between items-center"><h1 className="text-xl font-bold text-white">📊 Denemeler</h1><Btn onClick={()=>setModal({open:true,type:'exam'})}>+ Ekle</Btn></div>
-                <Card title="📈 Net Trendi"><div style={{height:'220px'}}><canvas ref={cr}></canvas></div></Card>
-                <Card title="📋 Geçmiş">{exams.length===0?<p className="text-gray-500 text-center py-4">Yok</p>:<div className="space-y-2">{[...exams].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=><div key={e.id} className="bg-dark-700 rounded-lg p-3 flex justify-between items-center"><div><div className="flex items-center gap-2 mb-1"><span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent">{e.type}</span><span className="text-sm font-medium">{fd(e.date)}</span>{e.weak&&<span className="text-xs text-danger">⚠️{e.weak}</span>}</div><div className="flex gap-3 text-xs text-gray-400"><span>Tür:{e.tN?.toFixed(1)}</span><span>Mat:{e.mN?.toFixed(1)}</span><span>Fen:{e.fN?.toFixed(1)}</span><span>Sos:{e.sN?.toFixed(1)}</span></div></div><div className="text-right"><div className="text-xl font-bold text-accent">{e.tot?.toFixed(1)}</div><button onClick={()=>setExams(exams.filter(x=>x.id!==e.id))} className="text-xs text-gray-600 hover:text-danger">sil</button></div></div>)}</div>}</Card>
-            </div>
-        );
-    };
+    const ExamPg=()=>{const cr=useRef(null);const ci=useRef(null);useEffect(()=>{if(cr.current&&exams.length>0){if(ci.current)ci.current.destroy();const sorted=[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(-10);ci.current=new Chart(cr.current,{type:'line',data:{labels:sorted.map(e=>fd(e.date)),datasets:[{data:sorted.map(e=>e.tot),borderColor:'#6c63ff',backgroundColor:'#6c63ff22',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#555'}},x:{ticks:{color:'#555'}}}}})}},[exams]);return(<div className="space-y-4"><div className="flex justify-between items-center"><h1 className="text-xl font-bold text-white">📊 Denemeler</h1><Btn onClick={()=>setModal({open:true,type:'exam'})}>+ Ekle</Btn></div><Card title="📈 Trend"><div style={{height:'200px'}}><canvas ref={cr}></canvas></div></Card><Card title="📋 Geçmiş">{exams.length===0?<p className="text-gray-500 text-center py-4">Yok</p>:<div className="space-y-2">{[...exams].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=><div key={e.id} className="bg-dark-700 rounded-lg p-3 flex justify-between"><div><div className="flex items-center gap-2 mb-1"><span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent">{e.type}</span><span className="text-sm">{fd(e.date)}</span>{e.weak&&<span className="text-xs text-danger">⚠️{e.weak}</span>}</div><div className="flex gap-3 text-xs text-gray-400"><span>T:{e.tN?.toFixed(1)}</span><span>M:{e.mN?.toFixed(1)}</span><span>F:{e.fN?.toFixed(1)}</span><span>S:{e.sN?.toFixed(1)}</span></div></div><div className="text-right"><div className="text-xl font-bold text-accent">{e.tot?.toFixed(1)}</div><button onClick={()=>setExams(exams.filter(x=>x.id!==e.id))} className="text-xs text-gray-600 hover:text-danger">sil</button></div></div>)}</div>}</Card></div>)};
 
-    // ═══ MISTAKES ═══
-    const MistPg=()=>{
-        const[rv,setRv]=useState(false);const[cur,setCur]=useState(null);const[sa,setSa]=useState(false);const[fil,setFil]=useState('all');
-        const start=()=>{const f=fil==='all'?mistakes:mistakes.filter(m=>m.subject===fil);if(!f.length){notify('⚠️ Yok!');return}setCur(f[Math.floor(Math.random()*f.length)]);setSa(false);setRv(true)};
-        const filtered=fil==='all'?mistakes:mistakes.filter(m=>m.subject===fil);
-        return(
-            <div className="space-y-4">
-                <div className="flex flex-wrap justify-between items-center gap-2"><h1 className="text-xl font-bold text-white">📕 Kara Defter</h1><div className="flex gap-2"><Btn onClick={start} v="success" s="sm">🔄 Tekrar</Btn><Btn onClick={()=>setModal({open:true,type:'mistake'})} s="sm">+ Ekle</Btn></div></div>
-                {rv&&cur&&<Card className="glow"><div className="text-center"><span className="text-xs px-3 py-1 rounded-full mb-3 inline-block" style={{backgroundColor:SUBS.find(s=>s.id===cur.subject)?.color+'22',color:SUBS.find(s=>s.id===cur.subject)?.color}}>{SUBS.find(s=>s.id===cur.subject)?.name}</span><h3 className="text-lg font-bold text-white mb-2">{cur.topic}</h3><p className="text-danger mb-4">❌ {cur.desc||cur.description}</p>{sa&&<div className="bg-dark-700 rounded-lg p-3 mb-4"><p className="text-success">✅ {cur.logic||cur.correctLogic||'—'}</p></div>}<div className="flex justify-center gap-2">{!sa&&<Btn onClick={()=>setSa(true)}>Göster</Btn>}<Btn onClick={start} v="ghost">→</Btn><Btn onClick={()=>setRv(false)} v="danger">×</Btn></div></div></Card>}
-                <div className="flex gap-1.5 flex-wrap"><button onClick={()=>setFil('all')} className={`px-2.5 py-1 rounded-full text-xs ${fil==='all'?'bg-accent text-white':'bg-dark-700 text-gray-400'}`}>Tümü</button>{SUBS.map(s=><button key={s.id} onClick={()=>setFil(s.id)} className="px-2.5 py-1 rounded-full text-xs" style={{backgroundColor:fil===s.id?s.color:'#1a1a2e',color:fil===s.id?'#fff':'#9ca3af'}}>{s.name}</button>)}</div>
-                <div className="space-y-2">{filtered.length===0?<Card><p className="text-gray-500 text-center py-4">Kayıt yok</p></Card>:[...filtered].sort((a,b)=>b.id-a.id).slice(0,20).map(m=><Card key={m.id}><div className="flex justify-between items-start"><div className="flex-1"><div className="flex items-center gap-1.5 mb-1 flex-wrap"><span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor:SUBS.find(s=>s.id===m.subject)?.color+'22',color:SUBS.find(s=>s.id===m.subject)?.color}}>{SUBS.find(s=>s.id===m.subject)?.name}</span><span className="text-sm font-semibold">{m.topic}</span><span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor:MTYPES.find(t=>t.id===m.type)?.color+'22',color:MTYPES.find(t=>t.id===m.type)?.color}}>{MTYPES.find(t=>t.id===m.type)?.name}</span></div><p className="text-xs text-danger">❌ {m.desc||m.description}</p>{(m.logic||m.correctLogic)&&<p className="text-xs text-success mt-1">✅ {m.logic||m.correctLogic}</p>}<p className="text-xs text-gray-600 mt-1">{fd(m.date)}</p></div><button onClick={()=>setMistakes(mistakes.filter(x=>x.id!==m.id))} className="text-gray-600 hover:text-danger ml-1">×</button></div></Card>)}</div>
-            </div>
-        );
-    };
+    const MistPg=()=>{const[rv,setRv]=useState(false);const[cur,setCur]=useState(null);const[sa,setSa]=useState(false);const[fil,setFil]=useState('all');const start=()=>{const f=fil==='all'?mistakes:mistakes.filter(m=>m.subject===fil);if(!f.length){notify('⚠️');return}setCur(f[Math.floor(Math.random()*f.length)]);setSa(false);setRv(true)};const filtered=fil==='all'?mistakes:mistakes.filter(m=>m.subject===fil);return(<div className="space-y-4"><div className="flex flex-wrap justify-between items-center gap-2"><h1 className="text-xl font-bold text-white">📕 Kara Defter</h1><div className="flex gap-2"><Btn onClick={start} v="success" s="sm">🔄</Btn><Btn onClick={()=>setModal({open:true,type:'mistake'})} s="sm">+</Btn></div></div>{rv&&cur&&<Card className="glow"><div className="text-center"><span className="text-xs px-3 py-1 rounded-full mb-3 inline-block" style={{backgroundColor:SUBS.find(s=>s.id===cur.subject)?.color+'22',color:SUBS.find(s=>s.id===cur.subject)?.color}}>{SUBS.find(s=>s.id===cur.subject)?.name}</span><h3 className="text-lg font-bold text-white mb-2">{cur.topic}</h3><p className="text-danger mb-4">❌ {cur.desc||cur.description}</p>{sa&&<div className="bg-dark-700 rounded-lg p-3 mb-4"><p className="text-success">✅ {cur.logic||cur.correctLogic||'—'}</p></div>}<div className="flex justify-center gap-2">{!sa&&<Btn onClick={()=>setSa(true)}>Göster</Btn>}<Btn onClick={start} v="ghost">→</Btn><Btn onClick={()=>setRv(false)} v="danger">×</Btn></div></div></Card>}<div className="flex gap-1.5 flex-wrap"><button onClick={()=>setFil('all')} className={`px-2.5 py-1 rounded-full text-xs ${fil==='all'?'bg-accent text-white':'bg-dark-700 text-gray-400'}`}>Tümü</button>{SUBS.map(s=><button key={s.id} onClick={()=>setFil(s.id)} className="px-2.5 py-1 rounded-full text-xs" style={{backgroundColor:fil===s.id?s.color:'#1a1a2e',color:fil===s.id?'#fff':'#9ca3af'}}>{s.name}</button>)}</div><div className="space-y-2">{filtered.length===0?<Card><p className="text-gray-500 text-center py-4">Yok</p></Card>:[...filtered].sort((a,b)=>b.id-a.id).slice(0,20).map(m=><Card key={m.id}><div className="flex justify-between"><div className="flex-1"><div className="flex gap-1.5 mb-1 flex-wrap"><span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor:SUBS.find(s=>s.id===m.subject)?.color+'22',color:SUBS.find(s=>s.id===m.subject)?.color}}>{SUBS.find(s=>s.id===m.subject)?.name}</span><span className="text-sm font-semibold">{m.topic}</span><span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor:MTYPES.find(t=>t.id===m.type)?.color+'22',color:MTYPES.find(t=>t.id===m.type)?.color}}>{MTYPES.find(t=>t.id===m.type)?.name}</span></div><p className="text-xs text-danger">❌ {m.desc||m.description}</p>{(m.logic||m.correctLogic)&&<p className="text-xs text-success mt-1">✅ {m.logic||m.correctLogic}</p>}</div><button onClick={()=>setMistakes(mistakes.filter(x=>x.id!==m.id))} className="text-gray-600 hover:text-danger ml-1">×</button></div></Card>)}</div></div>)};
 
-    // ═══ TOPICS ═══
-    const TopPg=()=>{
-        const[tab,setTab]=useState('matematik');
-        const upd=(sid,t,st)=>setTopics(p=>({...p,[sid]:{...(p[sid]||{}),[t]:st}}));
-        const markAll=(sid,list)=>{setTopics(p=>{const u={...p,[sid]:{...(p[sid]||{})}};list.forEach(t=>{u[sid][t]='mastered'});return u});addXp(20);notify('✅ +20 XP!')};
-        const m=MUF.find(x=>x.id===tab);
-        const row=(t,i,sid)=>{const st=(topics[sid]||{})[t]||'not_started';const info=TSTATUS[st];return(<div key={t} className="flex justify-between items-center bg-dark-700 rounded-lg px-3 py-2.5"><div className="flex items-center gap-2"><span className="text-xs text-gray-600 w-5">{i+1}</span><div className="w-2 h-2 rounded-full" style={{backgroundColor:info.c}}/><span className={`text-sm ${st==='mastered'?'line-through text-gray-500':''}`}>{t}</span></div><select value={st} onChange={e=>upd(sid,t,e.target.value)} className="text-xs bg-dark-900 border border-dark-600 rounded-lg px-2 py-1" style={{color:info.c}}>{Object.entries(TSTATUS).map(([k,v])=><option key={k} value={k}>{v.l}</option>)}</select></div>)};
-        return(
-            <div className="space-y-4">
-                <h1 className="text-xl font-bold text-white">📚 Konu Takibi</h1>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5">{MUF.map(x=>{const s=mufSt(x.id);const p=s.t>0?Math.round(s.m/s.t*100):0;return(<button key={x.id} onClick={()=>setTab(x.id)} className={`rounded-xl p-2.5 border text-left ${tab===x.id?'ring-1':'border-dark-600'}`} style={{backgroundColor:tab===x.id?x.color+'12':'#1a1a2e',borderColor:tab===x.id?x.color:undefined}}><div className="text-xs font-semibold" style={{color:x.color}}>{x.name}</div><div className="text-sm font-bold text-white">{s.m}/{s.t}</div><div className="mt-1 bg-dark-900 rounded-full h-1"><div className="h-1 rounded-full" style={{width:`${p}%`,backgroundColor:x.color}}/></div></button>)})}</div>
-                {m&&<div className="space-y-4">
-                    {m.d1.length>0&&<Card><div className="flex justify-between items-center mb-3"><h3 className="text-base font-semibold text-white">{m.d1l}</h3><Btn onClick={()=>markAll(m.id,m.d1)} v="success" s="sm">✓ Tümü</Btn></div><PBar value={m.d1.filter(t=>(topics[m.id]||{})[t]==='mastered').length} max={m.d1.length} color={m.color} label={false} size="sm"/><div className="mt-3 space-y-1.5">{m.d1.map((t,i)=>row(t,i,m.id))}</div></Card>}
-                    {m.d2.length>0&&m.d2l&&<Card><div className="flex justify-between items-center mb-3"><div className="flex items-center gap-2"><h3 className="text-base font-semibold text-white">{m.d2l}</h3><span className="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning">📍 Sınav</span></div><Btn onClick={()=>markAll(m.id,m.d2)} v="success" s="sm">✓ Tümü</Btn></div><PBar value={m.d2.filter(t=>(topics[m.id]||{})[t]==='mastered').length} max={m.d2.length} color={m.color} label={false} size="sm"/><div className="mt-3 space-y-1.5">{m.d2.map((t,i)=>row(t,i,m.id))}</div></Card>}
-                </div>}
-            </div>
-        );
-    };
+    const TopPg=()=>{const[tab,setTab]=useState('matematik');const upd=(s,t,v)=>setTopics(p=>({...p,[s]:{...(p[s]||{}),[t]:v}}));const markAll=(s,l)=>{setTopics(p=>{const u={...p,[s]:{...(p[s]||{})}};l.forEach(t=>{u[s][t]='mastered'});return u});addXp(20);notify('✅ +20 XP!')};const m=MUF.find(x=>x.id===tab);const row=(t,i,s)=>{const st=(topics[s]||{})[t]||'not_started';const info=TSTATUS[st];return <div key={t} className="flex justify-between items-center bg-dark-700 rounded-lg px-3 py-2.5"><div className="flex items-center gap-2"><span className="text-xs text-gray-600 w-5">{i+1}</span><div className="w-2 h-2 rounded-full" style={{backgroundColor:info.c}}/><span className={`text-sm ${st==='mastered'?'line-through text-gray-500':''}`}>{t}</span></div><select value={st} onChange={e=>upd(s,t,e.target.value)} className="text-xs bg-dark-900 border border-dark-600 rounded-lg px-2 py-1" style={{color:info.c}}>{Object.entries(TSTATUS).map(([k,v])=><option key={k} value={k}>{v.l}</option>)}</select></div>};return(<div className="space-y-4"><h1 className="text-xl font-bold text-white">📚 Konular</h1><div className="grid grid-cols-3 md:grid-cols-6 gap-1.5">{MUF.map(x=>{const s=mufSt(x.id);const p=s.t>0?Math.round(s.m/s.t*100):0;return <button key={x.id} onClick={()=>setTab(x.id)} className={`rounded-xl p-2.5 border text-left ${tab===x.id?'ring-1':'border-dark-600'}`} style={{backgroundColor:tab===x.id?x.color+'12':'#1a1a2e',borderColor:tab===x.id?x.color:undefined}}><div className="text-xs font-semibold" style={{color:x.color}}>{x.name}</div><div className="text-sm font-bold text-white">{s.m}/{s.t}</div><div className="mt-1 bg-dark-900 rounded-full h-1"><div className="h-1 rounded-full" style={{width:`${p}%`,backgroundColor:x.color}}/></div></button>})}</div>{m&&<div className="space-y-4">{m.d1.length>0&&<Card><div className="flex justify-between items-center mb-3"><h3 className="text-base font-semibold text-white">{m.d1l}</h3><Btn onClick={()=>markAll(m.id,m.d1)} v="success" s="sm">✓</Btn></div><PBar value={m.d1.filter(t=>(topics[m.id]||{})[t]==='mastered').length} max={m.d1.length} color={m.color} label={false} size="sm"/><div className="mt-3 space-y-1.5">{m.d1.map((t,i)=>row(t,i,m.id))}</div></Card>}{m.d2.length>0&&m.d2l&&<Card><div className="flex justify-between items-center mb-3"><div className="flex items-center gap-2"><h3 className="text-base font-semibold text-white">{m.d2l}</h3><span className="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning">📍</span></div><Btn onClick={()=>markAll(m.id,m.d2)} v="success" s="sm">✓</Btn></div><PBar value={m.d2.filter(t=>(topics[m.id]||{})[t]==='mastered').length} max={m.d2.length} color={m.color} label={false} size="sm"/><div className="mt-3 space-y-1.5">{m.d2.map((t,i)=>row(t,i,m.id))}</div></Card>}</div>}</div>)};
 
-    // ═══ REFLECTION ═══
-    const RefPg=()=>(
-        <div className="space-y-4">
-            <h1 className="text-xl font-bold text-white">📝 Değerlendirme</h1>
-            <div className="grid md:grid-cols-2 gap-4">
-                <Card title="📅 Haftalık"><div className="space-y-3"><Sel label="En zor" value={rF.hard} onChange={v=>setRF(p=>({...p,hard:v}))} options={[{value:'',label:'Seç...'},...SUBS.map(s=>({value:s.id,label:s.name}))]}/>
-                <Sel label="En iyi" value={rF.best} onChange={v=>setRF(p=>({...p,best:v}))} options={[{value:'',label:'Seç...'},...SUBS.map(s=>({value:s.id,label:s.name}))]}/>
-                <Inp label="Saat" type="number" value={rF.hours} onChange={v=>setRF(p=>({...p,hours:v}))}/>
-                <Txt label="Odak" value={rF.focus} onChange={v=>setRF(p=>({...p,focus:v}))} rows={2}/>
-                <Btn onClick={()=>{if(!rF.hard){notify('⚠️');return}setReflections(p=>[...p,{...rF,id:Date.now(),date:today,week:wn(new Date())}]);setRF({hard:'',best:'',hours:'',focus:''});addXp(10);notify('✅ +10 XP!')}} className="w-full">Kaydet</Btn></div></Card>
-                <Card title="🌙 Günlük"><div className="space-y-3"><Txt label="Ne öğrendim?" value={dF.learned} onChange={v=>setDF(p=>({...p,learned:v}))} rows={2}/>
-                <Inp label="En zor" value={dF.hard} onChange={v=>setDF(p=>({...p,hard:v}))}/>
-                <Txt label="Yarın" value={dF.tomorrow} onChange={v=>setDF(p=>({...p,tomorrow:v}))} rows={2}/>
-                <Btn onClick={()=>{if(!dF.learned){notify('⚠️');return}setDailyLogs(p=>[...p,{...dF,id:Date.now(),date:today}]);setDF({learned:'',hard:'',tomorrow:''});addXp(10);notify('✅ +10 XP!')}} className="w-full">Kaydet</Btn></div></Card>
-            </div>
-        </div>
-    );
+    const RefPg=()=>{const[rF,setRF]=useState({hard:'',best:'',hours:'',focus:''});const[dF,setDF]=useState({learned:'',hard:'',tomorrow:''});return(<div className="space-y-4"><h1 className="text-xl font-bold text-white">📝 Değerlendirme</h1><div className="grid md:grid-cols-2 gap-4"><Card title="📅 Haftalık"><div className="space-y-3"><Sel label="En zor" value={rF.hard} onChange={v=>setRF(p=>({...p,hard:v}))} options={[{value:'',label:'Seç...'},...SUBS.map(s=>({value:s.id,label:s.name}))]}/>
+    <Sel label="En iyi" value={rF.best} onChange={v=>setRF(p=>({...p,best:v}))} options={[{value:'',label:'Seç...'},...SUBS.map(s=>({value:s.id,label:s.name}))]}/>
+    <Inp label="Saat" type="number" value={rF.hours} onChange={v=>setRF(p=>({...p,hours:v}))}/>
+    <Txt label="Odak" value={rF.focus} onChange={v=>setRF(p=>({...p,focus:v}))} rows={2}/>
+    <Btn onClick={()=>{if(!rF.hard){notify('⚠️');return}setReflections(p=>[...p,{...rF,id:Date.now(),date:today,week:wn(new Date())}]);setRF({hard:'',best:'',hours:'',focus:''});addXp(10);notify('✅ +10 XP!')}} className="w-full">Kaydet</Btn></div></Card>
+    <Card title="🌙 Günlük"><div className="space-y-3"><Txt label="Ne öğrendim?" value={dF.learned} onChange={v=>setDF(p=>({...p,learned:v}))} rows={2}/>
+    <Inp label="En zor" value={dF.hard} onChange={v=>setDF(p=>({...p,hard:v}))}/>
+    <Txt label="Yarın" value={dF.tomorrow} onChange={v=>setDF(p=>({...p,tomorrow:v}))} rows={2}/>
+    <Btn onClick={()=>{if(!dF.learned){notify('⚠️');return}setDailyLogs(p=>[...p,{...dF,id:Date.now(),date:today}]);setDF({learned:'',hard:'',tomorrow:''});addXp(10);notify('✅ +10 XP!')}} className="w-full">Kaydet</Btn></div></Card></div></div>)};
 
-    // ═══ GOALS ═══
-    const GoalPg=()=>(
-        <div className="space-y-4">
-            <h1 className="text-xl font-bold text-white">🎯 Hedefler</h1>
-            <Card title="Net Hedefleri"><div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3">{SUBS.map(s=><Inp key={s.id} label={s.name} type="number" value={goals[s.id]||''} onChange={v=>setGoals(p=>({...p,[s.id]:parseInt(v)||0}))}/>)}</div><Btn onClick={()=>notify('✅ Kaydedildi!')}>Kaydet</Btn></Card>
-            <Card title="⏰ YKS Geri Sayım"><div className="grid grid-cols-3 gap-3 text-center"><div><div className="text-3xl font-bold text-accent">{Math.ceil((new Date('2027-06-19')-new Date())/864e5)}</div><div className="text-xs text-gray-500">Gün</div></div><div><div className="text-3xl font-bold text-accent">{Math.ceil((new Date('2027-06-19')-new Date())/(864e5*7))}</div><div className="text-xs text-gray-500">Hafta</div></div><div><div className="text-3xl font-bold text-accent">{Math.round((new Date('2027-06-19')-new Date())/(864e5*30))}</div><div className="text-xs text-gray-500">Ay</div></div></div></Card>
-            <Card title={`${lvl.i} ${lvl.n} — ${xp} XP`}><PBar value={xp-lvl.min} max={nLvl.min-lvl.min} color="#6c63ff" label={false} size="lg"/><div className="flex justify-between text-xs text-gray-500 mt-1"><span>{lvl.n}</span><span>{nLvl.n} ({nLvl.min} XP)</span></div><div className="grid grid-cols-5 gap-1.5 mt-3">{LEVELS.map((l,i)=><div key={i} className={`rounded-lg p-1.5 text-center text-xs border ${xp>=l.min?'border-accent bg-accent/10 text-accent':'border-dark-600 text-gray-700'}`}><div>{l.i}</div><div className="text-xs">{l.n}</div></div>)}</div></Card>
-        </div>
-    );
+    const GoalPg=()=>(<div className="space-y-4"><h1 className="text-xl font-bold text-white">🎯 Hedefler</h1><Card title="Net Hedefleri"><div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3">{SUBS.map(s=><Inp key={s.id} label={s.name} type="number" value={goals[s.id]||''} onChange={v=>setGoals(p=>({...p,[s.id]:parseInt(v)||0}))}/>)}</div><Btn onClick={()=>notify('✅ Kaydedildi!')}>Kaydet</Btn></Card><Card title="⏰ YKS Geri Sayım"><div className="grid grid-cols-3 gap-3 text-center"><div><div className="text-3xl font-bold text-accent">{Math.ceil((new Date('2027-06-19')-new Date())/864e5)}</div><div className="text-xs text-gray-500">Gün</div></div><div><div className="text-3xl font-bold text-accent">{Math.ceil((new Date('2027-06-19')-new Date())/(864e5*7))}</div><div className="text-xs text-gray-500">Hafta</div></div><div><div className="text-3xl font-bold text-accent">{Math.round((new Date('2027-06-19')-new Date())/(864e5*30))}</div><div className="text-xs text-gray-500">Ay</div></div></div></Card><Card title={`${lvl.i} ${lvl.n} — ${xp} XP`}><PBar value={xp-lvl.min} max={nLvl.min-lvl.min} color="#6c63ff" label={false} size="lg"/><div className="grid grid-cols-5 gap-1 mt-3">{LEVELS.map((l,i)=><div key={i} className={`rounded-lg p-1 text-center text-xs border ${xp>=l.min?'border-accent bg-accent/10 text-accent':'border-dark-600 text-gray-700'}`}><div>{l.i}</div><div>{l.n}</div></div>)}</div></Card></div>);
 
-    // ═══ PYTHON ═══
-    const PyPg=()=>(
-        <div className="space-y-4">
-            <h1 className="text-xl font-bold text-white">🐍 Python Challenge</h1>
-            <PBar value={pyDone.length} max={PY_CH.length} color="#ffd600" label={false} size="lg"/>
-            <div className="text-xs text-gray-500 text-right">{pyDone.length}/{PY_CH.length}</div>
-            <div className="grid md:grid-cols-2 gap-3">{PY_CH.map(ch=>{const done=pyDone.includes(ch.id);return(<Card key={ch.id} className={done?'opacity-50':''}><div className="flex justify-between items-start"><div className="flex-1"><div className="flex items-center gap-2 mb-1"><span className={`text-xs px-2 py-0.5 rounded-full ${ch.df==='Kolay'?'bg-success/20 text-success':ch.df==='Orta'?'bg-warning/20 text-warning':'bg-danger/20 text-danger'}`}>{ch.df}</span><span className="text-xs text-accent">+{ch.xp}</span></div><h3 className={`text-sm font-semibold mb-1 ${done?'line-through text-gray-500':'text-white'}`}>{ch.t}</h3><p className="text-xs text-gray-400">{ch.d}</p></div><Btn onClick={()=>{if(!done){setPyDone(p=>[...p,ch.id]);addXp(ch.xp);notify(`🐍 +${ch.xp} XP!`)}}} v={done?'ghost':'success'} s="sm" disabled={done}>{done?'✅':'Bitir'}</Btn></div></Card>)})}</div>
-        </div>
-    );
+    const PyPg=()=>(<div className="space-y-4"><h1 className="text-xl font-bold text-white">🐍 Python</h1><PBar value={pyDone.length} max={PY_CH.length} color="#ffd600" label={false} size="lg"/><div className="grid md:grid-cols-2 gap-3">{PY_CH.map(ch=>{const done=pyDone.includes(ch.id);return <Card key={ch.id} className={done?'opacity-50':''}><div className="flex justify-between"><div className="flex-1"><div className="flex items-center gap-2 mb-1"><span className={`text-xs px-2 py-0.5 rounded-full ${ch.df==='Kolay'?'bg-success/20 text-success':ch.df==='Orta'?'bg-warning/20 text-warning':'bg-danger/20 text-danger'}`}>{ch.df}</span><span className="text-xs text-accent">+{ch.xp}</span></div><h3 className={`text-sm font-semibold ${done?'line-through text-gray-500':'text-white'}`}>{ch.t}</h3><p className="text-xs text-gray-400 mt-1">{ch.d}</p></div><Btn onClick={()=>{if(!done){setPyDone(p=>[...p,ch.id]);addXp(ch.xp);notify(`🐍 +${ch.xp} XP!`)}}} v={done?'ghost':'success'} s="sm" disabled={done}>{done?'✅':'Bitir'}</Btn></div></Card>})}</div></div>);
 
-    // ═══ NAVIGATION ═══
+    // ═══════════ NAV + RENDER ═══════════
     const pages={dashboard:Dashboard,study:StudyPg,exams:ExamPg,mistakes:MistPg,topics:TopPg,reflection:RefPg,goals:GoalPg,python:PyPg};
     const Pg=pages[pg];
-    const nav=[{id:'dashboard',i:'📊',l:'Panel'},{id:'study',i:'📚',l:'Çalışma'},{id:'exams',i:'📝',l:'Deneme'},{id:'mistakes',i:'📕',l:'Defter'},{id:'topics',i:'✅',l:'Konular'},{id:'reflection',i:'💭',l:'Günlük'},{id:'goals',i:'🎯',l:'Hedef'},{id:'python',i:'🐍',l:'Python'}];
+    const nav=[{id:'dashboard',i:'📊',l:'Panel'},{id:'study',i:'📚',l:'Çalış'},{id:'exams',i:'📝',l:'Deneme'},{id:'mistakes',i:'📕',l:'Defter'},{id:'topics',i:'✅',l:'Konu'},{id:'reflection',i:'💭',l:'Günlük'},{id:'goals',i:'🎯',l:'Hedef'},{id:'python',i:'🐍',l:'Python'}];
 
-    return(
-        <div className="min-h-screen">
-            {/* Desktop Sidebar */}
-            <nav className="hidden md:flex fixed left-0 top-0 bottom-0 w-48 bg-dark-800 border-r border-dark-600 flex-col z-40">
-                <div className="p-3 border-b border-dark-600"><div className="text-lg font-bold text-accent">⚡ YKS Merkezi</div></div>
-                <div className="flex-1 py-2 overflow-y-auto">{nav.map(n=><button key={n.id} onClick={()=>setPg(n.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${pg===n.id?'bg-accent/10 text-accent border-r-2 border-accent':'text-gray-400 hover:text-white hover:bg-dark-700'}`}><span>{n.i}</span><span className="text-sm">{n.l}</span></button>)}</div>
-                <div className="p-3 border-t border-dark-600"><div className="text-xs text-gray-600">Mehmet Zeki</div><div className="text-xs text-gray-600">{lvl.i} {lvl.n} • {xp} XP</div></div>
-            </nav>
+    return(<div className="min-h-screen">
+        {/* Desktop Sidebar */}
+        <nav className="hidden md:flex fixed left-0 top-0 bottom-0 w-44 bg-dark-800 border-r border-dark-600 flex-col z-40">
+            <div className="p-3 border-b border-dark-600"><div className="text-lg font-bold text-accent">⚡ YKS Merkezi</div></div>
+            <div className="flex-1 py-2">{nav.map(n=><button key={n.id} onClick={()=>setPg(n.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${pg===n.id?'bg-accent/10 text-accent border-r-2 border-accent':'text-gray-400 hover:text-white hover:bg-dark-700'}`}><span>{n.i}</span><span className="text-sm">{n.l}</span></button>)}</div>
+            <div className="p-3 border-t border-dark-600"><div className="text-xs text-gray-600">Mehmet Zeki • {lvl.i} {xp} XP</div>
+            {notifEnabled&&<div className="text-xs text-success mt-1">🔔 Bildirimler açık</div>}</div>
+        </nav>
 
-            {/* Mobile Bottom Nav */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-dark-800 border-t border-dark-600 flex z-50 safe-bottom">
-                {nav.map(n=><button key={n.id} onClick={()=>setPg(n.id)} className={`flex-1 flex flex-col items-center py-2 ${pg===n.id?'text-accent':'text-gray-500'}`}><span className="text-base">{n.i}</span><span className="text-xs mt-0.5">{n.l}</span></button>)}
-            </nav>
+        {/* Mobile Bottom Nav */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-dark-800 border-t border-dark-600 flex z-50">
+            {nav.map(n=><button key={n.id} onClick={()=>setPg(n.id)} className={`flex-1 flex flex-col items-center py-2 relative ${pg===n.id?'text-accent':'text-gray-500'}`}><span className="text-base">{n.i}</span><span style={{fontSize:'10px'}} className="mt-0.5">{n.l}</span></button>)}
+        </nav>
 
-            <main className="md:ml-48 p-4 pb-20 md:pb-6"><Pg/></main>
+        <main className="md:ml-44 p-4 pb-20 md:pb-6"><Pg/></main>
 
-            {/* MODALS */}
-            <Modal isOpen={modal.open&&modal.type==='session'} onClose={()=>setModal({open:false,type:null})} title="📚 Çalışma Ekle">
-                <div className="space-y-3">
-                    <Sel label="Ders" value={sF.subject} onChange={v=>setSF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:s.name}))}/>
-                    <Inp label="Konu" value={sF.topic} onChange={v=>setSF(p=>({...p,topic:v}))} placeholder="Konu adı..."/>
-                    <div className="grid grid-cols-2 gap-2"><Inp label="Süre (dk)" type="number" value={sF.dur} onChange={v=>setSF(p=>({...p,dur:v}))}/><Inp label="Soru" type="number" value={sF.qc} onChange={v=>setSF(p=>({...p,qc:v}))}/></div>
-                    <div className="grid grid-cols-2 gap-2"><Inp label="Doğru" type="number" value={sF.correct} onChange={v=>setSF(p=>({...p,correct:v}))}/><Inp label="Yanlış" type="number" value={sF.wrong} onChange={v=>setSF(p=>({...p,wrong:v}))}/></div>
-                    <div className="grid grid-cols-3 gap-2">
-                        <Sel label="Zorluk" value={sF.diff} onChange={v=>setSF(p=>({...p,diff:v}))} options={[{value:'kolay',label:'Kolay'},{value:'orta',label:'Orta'},{value:'zor',label:'Zor'}]}/>
-                        <Sel label="Odak" value={sF.focus} onChange={v=>setSF(p=>({...p,focus:v}))} options={[1,2,3,4,5].map(n=>({value:String(n),label:n+'/5'}))}/>
-                        <Sel label="Enerji" value={sF.energy} onChange={v=>setSF(p=>({...p,energy:v}))} options={[1,2,3,4,5].map(n=>({value:String(n),label:n+'/5'}))}/>
-                    </div>
-                    <Inp label="Uyku (saat)" type="number" value={sF.sleep} onChange={v=>setSF(p=>({...p,sleep:v}))}/>
-                    <Btn onClick={addSession} className="w-full">Kaydet</Btn>
-                </div>
-            </Modal>
+        {/* Modals */}
+        <Modal isOpen={modal.open&&modal.type==='session'} onClose={()=>setModal({open:false,type:null})} title="📚 Çalışma Ekle">
+            <div className="space-y-3">
+                <Sel label="Ders" value={sF.subject} onChange={v=>setSF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:s.name}))}/>
+                <Inp label="Konu" value={sF.topic} onChange={v=>setSF(p=>({...p,topic:v}))} placeholder="Konu..."/>
+                <div className="grid grid-cols-2 gap-2"><Inp label="Süre (dk)" type="number" value={sF.dur} onChange={v=>setSF(p=>({...p,dur:v}))}/><Inp label="Soru" type="number" value={sF.qc} onChange={v=>setSF(p=>({...p,qc:v}))}/></div>
+                <div className="grid grid-cols-2 gap-2"><Inp label="Doğru" type="number" value={sF.correct} onChange={v=>setSF(p=>({...p,correct:v}))}/><Inp label="Yanlış" type="number" value={sF.wrong} onChange={v=>setSF(p=>({...p,wrong:v}))}/></div>
+                <div className="grid grid-cols-3 gap-2"><Sel label="Zorluk" value={sF.diff} onChange={v=>setSF(p=>({...p,diff:v}))} options={[{value:'kolay',label:'Kolay'},{value:'orta',label:'Orta'},{value:'zor',label:'Zor'}]}/><Sel label="Odak" value={sF.focus} onChange={v=>setSF(p=>({...p,focus:v}))} options={[1,2,3,4,5].map(n=>({value:String(n),label:n+'/5'}))}/><Sel label="Enerji" value={sF.energy} onChange={v=>setSF(p=>({...p,energy:v}))} options={[1,2,3,4,5].map(n=>({value:String(n),label:n+'/5'}))}/></div>
+                <Btn onClick={addSession} className="w-full">Kaydet</Btn>
+            </div>
+        </Modal>
 
-            <Modal isOpen={modal.open&&modal.type==='exam'} onClose={()=>setModal({open:false,type:null})} title="📝 Deneme Ekle">
-                <div className="space-y-3">
-                    <Sel label="Tür" value={eF.type} onChange={v=>setEF(p=>({...p,type:v}))} options={[{value:'TYT',label:'TYT'},{value:'AYT',label:'AYT'}]}/>
-                    <p className="text-xs text-gray-500">Net = Doğru − (Yanlış÷4)</p>
-                    {[{l:'Türkçe',d:'tD',y:'tY'},{l:'Matematik',d:'mD',y:'mY'},{l:'Fen',d:'fD',y:'fY'},{l:'Sosyal',d:'sD',y:'sY'}].map(x=>(
-                        <div key={x.l} className="grid grid-cols-3 gap-2 items-end">
-                            <div className="text-xs text-gray-400 py-2">{x.l}</div>
-                            <Inp label="D" type="number" value={eF[x.d]} onChange={v=>setEF(p=>({...p,[x.d]:v}))}/>
-                            <Inp label="Y" type="number" value={eF[x.y]} onChange={v=>setEF(p=>({...p,[x.y]:v}))}/>
-                        </div>
-                    ))}
-                    <div className="bg-dark-700 rounded-lg p-2 grid grid-cols-5 gap-1 text-center text-xs">
-                        {[{n:'Tür',d:'tD',y:'tY'},{n:'Mat',d:'mD',y:'mY'},{n:'Fen',d:'fD',y:'fY'},{n:'Sos',d:'sD',y:'sY'}].map(x=><div key={x.n}><div className="text-gray-500">{x.n}</div><div className="text-white font-bold">{cn(parseInt(eF[x.d])||0,parseInt(eF[x.y])||0).toFixed(1)}</div></div>)}
-                        <div><div className="text-gray-500">TOP</div><div className="text-accent font-bold">{(cn(parseInt(eF.tD)||0,parseInt(eF.tY)||0)+cn(parseInt(eF.mD)||0,parseInt(eF.mY)||0)+cn(parseInt(eF.fD)||0,parseInt(eF.fY)||0)+cn(parseInt(eF.sD)||0,parseInt(eF.sY)||0)).toFixed(1)}</div></div>
-                    </div>
-                    <Btn onClick={addExam} className="w-full">Kaydet (+25 XP)</Btn>
-                </div>
-            </Modal>
+        <Modal isOpen={modal.open&&modal.type==='exam'} onClose={()=>setModal({open:false,type:null})} title="📝 Deneme Ekle">
+            <div className="space-y-3">
+                <Sel label="Tür" value={eF.type} onChange={v=>setEF(p=>({...p,type:v}))} options={[{value:'TYT',label:'TYT'},{value:'AYT',label:'AYT'}]}/>
+                {[{l:'Türkçe',d:'tD',y:'tY'},{l:'Matematik',d:'mD',y:'mY'},{l:'Fen',d:'fD',y:'fY'},{l:'Sosyal',d:'sD',y:'sY'}].map(x=><div key={x.l} className="grid grid-cols-3 gap-2 items-end"><div className="text-xs text-gray-400 py-2">{x.l}</div><Inp label="D" type="number" value={eF[x.d]} onChange={v=>setEF(p=>({...p,[x.d]:v}))}/><Inp label="Y" type="number" value={eF[x.y]} onChange={v=>setEF(p=>({...p,[x.y]:v}))}/></div>)}
+                <div className="bg-dark-700 rounded-lg p-2 grid grid-cols-5 text-center text-xs">{[{n:'T',d:'tD',y:'tY'},{n:'M',d:'mD',y:'mY'},{n:'F',d:'fD',y:'fY'},{n:'S',d:'sD',y:'sY'}].map(x=><div key={x.n}><div className="text-gray-500">{x.n}</div><div className="text-white font-bold">{cn(parseInt(eF[x.d])||0,parseInt(eF[x.y])||0).toFixed(1)}</div></div>)}<div><div className="text-gray-500">Σ</div><div className="text-accent font-bold">{(cn(parseInt(eF.tD)||0,parseInt(eF.tY)||0)+cn(parseInt(eF.mD)||0,parseInt(eF.mY)||0)+cn(parseInt(eF.fD)||0,parseInt(eF.fY)||0)+cn(parseInt(eF.sD)||0,parseInt(eF.sY)||0)).toFixed(1)}</div></div></div>
+                <Btn onClick={addExam} className="w-full">Kaydet (+25 XP)</Btn>
+            </div>
+        </Modal>
 
-            <Modal isOpen={modal.open&&modal.type==='mistake'} onClose={()=>setModal({open:false,type:null})} title="📕 Hata Ekle">
-                <div className="space-y-3">
-                    <Sel label="Ders" value={mF.subject} onChange={v=>setMF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:s.name}))}/>
-                    <Inp label="Konu" value={mF.topic} onChange={v=>setMF(p=>({...p,topic:v}))}/>
-                    <Sel label="Hata Türü" value={mF.type} onChange={v=>setMF(p=>({...p,type:v}))} options={MTYPES.map(t=>({value:t.id,label:t.name}))}/>
-                    <Txt label="Hata" value={mF.desc} onChange={v=>setMF(p=>({...p,desc:v}))}/>
-                    <Txt label="Doğrusu" value={mF.logic} onChange={v=>setMF(p=>({...p,logic:v}))}/>
-                    <Btn onClick={addMistake} className="w-full">Kaydet (+5 XP)</Btn>
-                </div>
-            </Modal>
+        <Modal isOpen={modal.open&&modal.type==='mistake'} onClose={()=>setModal({open:false,type:null})} title="📕 Hata Ekle">
+            <div className="space-y-3">
+                <Sel label="Ders" value={mF.subject} onChange={v=>setMF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:s.name}))}/>
+                <Inp label="Konu" value={mF.topic} onChange={v=>setMF(p=>({...p,topic:v}))}/>
+                <Sel label="Tür" value={mF.type} onChange={v=>setMF(p=>({...p,type:v}))} options={MTYPES.map(t=>({value:t.id,label:t.name}))}/>
+                <Txt label="Hata" value={mF.desc} onChange={v=>setMF(p=>({...p,desc:v}))}/>
+                <Txt label="Doğrusu" value={mF.logic} onChange={v=>setMF(p=>({...p,logic:v}))}/>
+                <Btn onClick={addMistake} className="w-full">Kaydet (+5 XP)</Btn>
+            </div>
+        </Modal>
 
-            <Modal isOpen={modal.open&&modal.type==='task'} onClose={()=>setModal({open:false,type:null})} title="✅ Görev Ekle">
-                <div className="space-y-3">
-                    <Inp label="Görev" value={tI.text} onChange={v=>setTI(p=>({...p,text:v}))} placeholder="Matematik – 20 soru"/>
-                    <Sel label="Ders" value={tI.subject} onChange={v=>setTI(p=>({...p,subject:v}))} options={[{value:'genel',label:'Genel'},...SUBS.map(s=>({value:s.id,label:s.name}))]}/>
-                    <Btn onClick={()=>{if(!tI.text){notify('⚠️');return}setTasks(p=>[...p,{id:Date.now(),date:today,text:tI.text,subject:tI.subject,completed:false,xp:10}]);setTI({text:'',subject:'matematik'});setModal({open:false,type:null});notify('✅ Eklendi!')}} className="w-full">Ekle</Btn>
-                </div>
-            </Modal>
+        <Modal isOpen={modal.open&&modal.type==='task'} onClose={()=>setModal({open:false,type:null})} title="✅ Görev Ekle">
+            <div className="space-y-3">
+                <Inp label="Görev" value={tI.text} onChange={v=>setTI(p=>({...p,text:v}))} placeholder="Matematik – 20 soru"/>
+                <Sel label="Ders" value={tI.subject} onChange={v=>setTI(p=>({...p,subject:v}))} options={[{value:'genel',label:'Genel'},...SUBS.map(s=>({value:s.id,label:s.name}))]}/>
+                <Btn onClick={()=>{if(!tI.text){notify('⚠️');return}setTasks(p=>[...p,{id:Date.now(),date:today,text:tI.text,subject:tI.subject,completed:false,xp:10}]);setTI({text:'',subject:'matematik'});setModal({open:false,type:null});notify('✅!')}} className="w-full">Ekle</Btn>
+            </div>
+        </Modal>
 
-            <Toast msg={toast.msg} show={toast.show}/>
-        </div>
-    );
+        <Toast msg={toast.msg} show={toast.show}/>
+    </div>);
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
