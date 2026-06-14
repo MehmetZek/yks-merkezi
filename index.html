@@ -308,7 +308,7 @@ const Btn=memo(({children,onClick,v='primary',s='md',className='',disabled=false
     };
     const sz={xs:{padding:'3px 8px',fontSize:'11px'},sm:{padding:'5px 10px',fontSize:'12px'},md:{padding:'8px 16px',fontSize:'14px'},lg:{padding:'10px 20px',fontSize:'15px'}};
     return<button onClick={onClick} disabled={disabled||loading} className={`rounded-xl font-semibold active:scale-95 flex items-center gap-1.5 transition-all ${className}`}
-        style={{...vs[v||'primary'],...sz[s||'md'],opacity:(disabled||loading)?.5:1,cursor:(disabled||loading)?'not-allowed':'pointer',border:'none',...style}}>
+        style={{...vs[v||'primary'],...sz[s||'md'],opacity:(disabled||loading)?0.5:1,cursor:(disabled||loading)?'not-allowed':'pointer',border:'none',...style}}>
         {loading&&<span className="spin" style={{width:'12px',height:'12px',borderRadius:'50%',border:'2px solid currentColor',borderTopColor:'transparent',display:'inline-block'}}/>}
         {children}
     </button>;
@@ -1281,7 +1281,7 @@ const App=()=>{
                 (masteryPct!==null?Math.max(0,Math.round((60-masteryPct)*0.35)):8)-
                 Math.min(18,q7/18)
             );
-            return{...s,sessCount:sess.length,q7,mins7,mins14,misCount:mis.length,mis14:mis14.length,due:due.length,masteryPct,learning,practicing,lastGap,hiddenScore,risk,openTopics:allTopics.length?allTopics.length-mastered:0};
+            return{...s,sessCount:sess.length,q7,mins7,mins14,misCount:mis.length,mis14:mis14.length,due:due.length,masteryPct,learning,practicing,lastGap,hiddenScore,risk,openTopics:allPairs.length?allPairs.length-mastered:0};
         }).filter(s=>s.sessCount||s.misCount||s.due||s.masteryPct!==null).sort((a,b)=>b.risk-a.risk);
     },[sessions,mistakes,flashcards,topics,today]);
 
@@ -1593,7 +1593,7 @@ const App=()=>{
                 <PBar value={tDone} max={tTasks.length||1} color="#00c853" label={false} size="sm"/>
                 <div style={{marginTop:'10px'}} className="space-y-2">
                     {tTasks.map(t=>{const pc={high:'#ff5252',medium:'#ffd600',low:'#4b5563'}[t.priority||'medium'];return(
-                        <div key={t.id} style={{display:'flex',alignItems:'center',gap:'10px',backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'9px 12px',borderLeft:`3px solid ${pc}`,opacity:t.completed?.5:1}}>
+                        <div key={t.id} style={{display:'flex',alignItems:'center',gap:'10px',backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'9px 12px',borderLeft:`3px solid ${pc}`,opacity:t.completed?0.5:1}}>
                             <input type="checkbox" checked={t.completed} onChange={()=>toggleTask(t.id)} style={{width:'16px',height:'16px',accentColor:'#6c63ff',cursor:'pointer'}}/>
                             <ExamBadge type={t.examType||'TYT'}/>
                             <span style={{fontSize:'13px',flex:1,color:t.completed?'#6b7280':'#e5e7eb',textDecoration:t.completed?'line-through':'none'}}>{t.text}</span>
@@ -2405,5 +2405,5 @@ if('serviceWorker' in navigator){
     });
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0bc3fd5b803c71b',t:'MTc4MTQ3MDY2Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
