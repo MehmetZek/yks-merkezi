@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>YKS Merkezi Pro</title>
+    <title>YKS Merkezi // Komuta Üssü</title>
     <meta name="theme-color" content="#6c63ff">
+    <meta name="description" content="YKS Merkezi // Komuta Üssü: TYT/AYT takip, operasyon planlama, analiz ve hafıza laboratuvarı">
+    <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{dark:{900:'#0a0a0f',800:'#12121a',700:'#1a1a2e',600:'#2a2a3e'}}}}}</script>
@@ -33,6 +35,14 @@
         .sr-ring{transition:stroke-dashoffset .8s ease}
         .tyt-badge{background:rgba(108,99,255,.15);color:#6c63ff;border:1px solid rgba(108,99,255,.3)}
         .ayt-badge{background:rgba(255,152,0,.15);color:#ff9800;border:1px solid rgba(255,152,0,.3)}
+
+        .hud-grid{position:relative;overflow:hidden}
+        .hud-grid::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(108,99,255,.06) 1px, transparent 1px),linear-gradient(90deg, rgba(108,99,255,.06) 1px, transparent 1px);background-size:18px 18px;pointer-events:none;opacity:.35}
+        .terminal{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em}
+        .status-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a3e;background:#12121a}
+        .scanline{position:relative;overflow:hidden}
+        .scanline::after{content:'';position:absolute;left:0;right:0;top:-40%;height:40%;background:linear-gradient(to bottom, rgba(255,255,255,0), rgba(108,99,255,.08), rgba(255,255,255,0));animation:scan 6s linear infinite;pointer-events:none}
+        @keyframes scan{to{transform:translateY(320%)}}
     </style>
 </head>
 <body>
@@ -42,6 +52,13 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script type="text/babel">
 const{useState,useEffect,useRef,useMemo,useCallback,memo}=React;
+
+const ymd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pYmd=s=>{const[a,b,c]=(s||'').split('-').map(Number);return a&&b&&c?new Date(a,b-1,c,12,0,0):new Date()};
+const addYmdDays=(s,days)=>{const d=pYmd(s);d.setDate(d.getDate()+days);return ymd(d)};
+const diffYmd=(a,b)=>Math.round((pYmd(b).getTime()-pYmd(a).getTime())/864e5);
+const getSavedExamDate=()=>{try{return JSON.parse(localStorage.getItem('ykspro_examDate'))||'2027-06-19'}catch{return '2027-06-19'}};
+
 
 // ── STORE ──────────────────────────────────────────────────────
 const S={
@@ -76,14 +93,14 @@ const SM2={
             else newInterval=Math.round(prevInterval*newEF);
         }
         
-        const today=new Date().toISOString().split('T')[0];
-        const nd=new Date();nd.setDate(nd.getDate()+newInterval);
+        const today=ymd(new Date());
+        const nextReview=addYmdDays(today,newInterval);
         
         return{
             ef:newEF,
             interval:newInterval,
             reps:newReps,
-            nextReview:nd.toISOString().split('T')[0],
+            nextReview,
             lastReview:today,
             totalReviews:(card.totalReviews||0)+1,
             history:[...(card.history||[]).slice(-19),{date:today,q,interval:newInterval}]
@@ -107,7 +124,7 @@ const SM2={
     // Is card due for review today or overdue?
     isDue:(card)=>{
         if(!card.nextReview)return true;
-        const today=new Date().toISOString().split('T')[0];
+        const today=ymd(new Date());
         return card.nextReview<=today;
     },
     
@@ -129,6 +146,7 @@ const SM2={
 // TYT total = 120, AYT Sayısal = 80
 const SUBS=[
     {id:'turkce',    name:'Türkçe',       color:'#29b6f6', tyt:40, ayt:0,  icon:'📖', aytField:null},
+    {id:'edebiyat',  name:'Edebiyat',     color:'#26c6da', tyt:0,  ayt:24, icon:'📝', aytField:'ea|sozel'},
     {id:'matematik', name:'Matematik',    color:'#6c63ff', tyt:40, ayt:40, icon:'📐', aytField:'sayisal|ea'},
     {id:'fizik',     name:'Fizik',        color:'#00c853', tyt:7,  ayt:14, icon:'⚛️', aytField:'sayisal'},
     {id:'kimya',     name:'Kimya',        color:'#ffd600', tyt:7,  ayt:13, icon:'🧪', aytField:'sayisal'},
@@ -174,10 +192,12 @@ const AYT_FIELDS={
             {id:'edebiyat',name:'Türk Dili/Edb.',color:'#29b6f6',max:24},
             {id:'tarih1',  name:'Tarih-1',       color:'#ff9800', max:10},
             {id:'cografya1',name:'Coğrafya-1',   color:'#e91e63', max:6},
+            {id:'tarih2',  name:'Tarih-2',       color:'#ffb74d', max:11},
+            {id:'cografya2',name:'Coğrafya-2',   color:'#ec407a', max:11},
             {id:'felsefe', name:'Felsefe Grubu', color:'#9c27b0', max:12},
-            {id:'din',     name:'Din Kültürü',   color:'#795548', max:5},
+            {id:'din',     name:'Din Kültürü',   color:'#795548', max:6},
         ]
-    }, // Total: 57
+    }, // Total: 80 ✓
 };
 
 const MTYPES=[
@@ -202,8 +222,8 @@ const BADGES=[
     {id:'streak7',  n:'Haftalık Seri',i:'⚡',d:'7 gün üst üste çalış',     chk:(s,e,m,str)=>str>=7},
     {id:'q500',     n:'500 Soru',     i:'📝',d:'Toplam 500 soru',           chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=500},
     {id:'q2000',    n:'2000 Soru',    i:'🏆',d:'Toplam 2000 soru',          chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=2000},
-    {id:'tyt120',   n:'Mükemmel TYT', i:'🎓',d:'Günde 120 TYT sorusu çöz', chk:(s)=>{const t=new Date().toISOString().split('T')[0];return s.filter(x=>x.date===t&&(x.examType||'TYT')==='TYT').reduce((a,x)=>a+qInt(x),0)>=120}},
-    {id:'ayt80',    n:'Mükemmel AYT', i:'🧪',d:'Günde 80 AYT sorusu çöz',  chk:(s)=>{const t=new Date().toISOString().split('T')[0];return s.filter(x=>x.date===t&&x.examType==='AYT').reduce((a,x)=>a+qInt(x),0)>=80}},
+    {id:'tyt120',   n:'Mükemmel TYT', i:'🎓',d:'Günde 120 TYT sorusu çöz', chk:(s)=>{const t=td();return s.filter(x=>x.date===t&&(x.examType||'TYT')==='TYT').reduce((a,x)=>a+qInt(x),0)>=120}},
+    {id:'ayt80',    n:'Mükemmel AYT', i:'🧪',d:'Günde 80 AYT sorusu çöz',  chk:(s)=>{const t=td();return s.filter(x=>x.date===t&&x.examType==='AYT').reduce((a,x)=>a+qInt(x),0)>=80}},
     {id:'exam5',    n:'5 Deneme',     i:'📊',d:'5 deneme çöz',              chk:(s,e)=>e.length>=5},
     {id:'exam20',   n:'20 Deneme',    i:'💯',d:'20 deneme çöz',             chk:(s,e)=>e.length>=20},
     {id:'sr50',     n:'50 SR Tekrar', i:'🧠',d:'50 spaced rep tekrar',      chk:(s,e,m,st,xp,fc)=>(fc||[]).reduce((a,c)=>a+(c.totalReviews||0),0)>=50},
@@ -212,21 +232,34 @@ const BADGES=[
 ];
 
 // ── UTILS ──────────────────────────────────────────────────────
-const td   =()=>new Date().toISOString().split('T')[0];
-const fd   =d=>new Date(d).toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
-const fdf  =d=>new Date(d).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'});
-const l7   =()=>{const r=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);r.push(d.toISOString().split('T')[0])}return r};
+const td   =()=>ymd(new Date());
+const fd   =d=>pYmd(d).toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
+const fdf  =d=>pYmd(d).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'});
+const l7   =()=>{const r=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);r.push(ymd(d))}return r};
 const gl   =x=>LEVELS.slice().reverse().find(l=>x>=l.min)||LEVELS[0];
 const nlvl =x=>{const i=LEVELS.findIndex(l=>l.min>x);return i>=0?LEVELS[i]:LEVELS[LEVELS.length-1]};
+const iVal =v=>Math.max(0,parseInt(v)||0);
+const avg  =arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
+const clamp=(n,min,max)=>Math.min(Math.max(n,min),max);
 const cn   =(d,y)=>Math.max(0,d-(y/4));
-const yksGun=()=>Math.max(0,Math.ceil((new Date('2027-06-19')-new Date())/864e5));
+const sectionNums=(d,y,max)=>{const dd=Math.min(iVal(d),max);const yy=Math.min(iVal(y),Math.max(0,max-dd));return{d:dd,y:yy,net:cn(dd,yy)}};
+const fitSection=(prev,key,otherKey,max,raw)=>{if(raw==='')return{...prev,[key]:''};const other=Math.min(iVal(prev[otherKey]),max);let val=Math.min(iVal(raw),max);if(val+other>max)val=Math.max(0,max-other);return{...prev,[key]:String(val)}};
+const norm =s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+const srcName=s=>(s||'').toString().trim()||'Belirtilmedi';
+const topicMatch=(a,b)=>{const x=norm(a),y=norm(b);return !!(x&&y&&(x===y||x.includes(y)||y.includes(x)))};
+const mondayOf=(base=td())=>{const d=pYmd(base);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return ymd(d)};
+const weekDates=(base=td())=>{const start=pYmd(mondayOf(base));return Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return ymd(d)})};
+const safePct=(a,b)=>b>0?Math.round((a/b)*100):0;
+const yksGun=(examDate=getSavedExamDate())=>Math.max(0,diffYmd(td(),examDate));
 const qInt =s=>parseInt(s.qc||s.questionCount)||0;
 const dInt =s=>parseInt(s.dur||s.duration)||0;
+const secErr=(label,d,y,max)=>{const dd=iVal(d),yy=iVal(y);return dd>max||yy>max||dd+yy>max?`${label}: doğru + yanlış ${max}'i geçemez`:''};
 const retC =r=>r>=80?'#00c853':r>=60?'#ffd600':r>=40?'#ff9800':'#ff5252';
 
 // Session helpers
 const isTYT=s=>(s.examType||'TYT')==='TYT';
 const isAYT=s=>s.examType==='AYT';
+const WEEKLY_PLAN_DEFAULT=()=>({questions:350,minutes:900,exams:2,dist:{turkce:20,matematik:20,fizik:10,kimya:10,biyoloji:10,tarih:10,cografya:10,felsefe:5,din:5}});
 
 // Linear regression for score prediction
 const linReg=vals=>{
@@ -369,7 +402,7 @@ const Heatmap=memo(({sessions})=>{
     const cells=[];
     for(let i=90;i>=0;i--){
         const d=new Date(now);d.setDate(d.getDate()-i);
-        const ds=d.toISOString().split('T')[0];
+        const ds=ymd(d);
         const mins=sessions.filter(s=>s.date===ds).reduce((a,s)=>a+dInt(s),0);
         const l=mins>=180?4:mins>=120?3:mins>=60?2:mins>0?1:0;
         const colors=['#1a1a2e','#1e3a2e','#2d5c40','#3d8050','#4dab62'];
@@ -610,7 +643,7 @@ const Flashcards=memo(({flashcards,setFlashcards,notify,addXp})=>{
     return<div className="space-y-4">
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'8px'}}>
             <div>
-                <h2 style={{fontSize:'16px',fontWeight:'bold',color:'#fff',margin:0}}>🃏 Flashcard'lar</h2>
+                <h2 style={{fontSize:'16px',fontWeight:'bold',color:'#fff',margin:0}}>🃏 Flashcard</h2>
                 {flashcards.length>0&&<div style={{fontSize:'12px',color:'#6b7280',marginTop:'2px'}}>Hafıza: %{avgRet} | {dueCards.length} kart bugün</div>}
             </div>
             <div style={{display:'flex',gap:'8px'}}>
@@ -677,233 +710,257 @@ const Flashcards=memo(({flashcards,setFlashcards,notify,addXp})=>{
 });
 
 // ── BRAIN LAB ─────────────────────────────────────────────────
-const BrainLab=memo(({flashcards,sessions,exams})=>{
-    const[tab,setTab]=useState('dashboard');
-    const curveRef=useRef(null);const curveCI=useRef(null);
-    const retBarRef=useRef(null);const retBarCI=useRef(null);
+const BrainLab=memo(({flashcards,sessions,exams,mistakes,topics})=>{
+    const [tab,setTab]=useState('tyt');
+    const [reviewField,setReviewField]=useState('TYT');
+    const [reviewSub,setReviewSub]=useState('all');
+    const [reviewQueue,setReviewQueue]=useState([]);
+    const [reviewIx,setReviewIx]=useState(0);
+    const [reviewShow,setReviewShow]=useState(false);
+    const tytRef=useRef(null),tytCI=useRef(null);
+    const aytRef=useRef(null),aytCI=useRef(null);
+    const srcRef=useRef(null),srcCI=useRef(null);
 
-    const stats=useMemo(()=>{
-        const active=flashcards.filter(c=>c.totalReviews>0);
-        const due=flashcards.filter(c=>SM2.isDue(c));
-        const avgRet=active.length?Math.round(active.reduce((a,c)=>a+SM2.getRetention(c),0)/active.length):0;
-        const avgEF=active.length?(active.reduce((a,c)=>a+(c.ef||2.5),0)/active.length).toFixed(2):'2.50';
-        const avgInt=active.length?Math.round(active.reduce((a,c)=>a+(c.interval||0),0)/active.length):0;
-        const critical=flashcards.filter(c=>SM2.getRetention(c)<40&&c.totalReviews>0);
-        const totalReps=flashcards.reduce((a,c)=>a+(c.totalReviews||0),0);
-        return{active:active.length,due:due.length,avgRet,avgEF,avgInt,critical:critical.length,totalReps,total:flashcards.length};
-    },[flashcards]);
+    const tytExams=useMemo(()=>[...exams].filter(e=>!e.examType||e.examType==='TYT').sort((a,b)=>new Date(a.date)-new Date(b.date)),[exams]);
+    const aytSayExams=useMemo(()=>[...exams].filter(e=>e.examType==='AYT'&&(!e.field||e.field==='sayisal')).sort((a,b)=>new Date(a.date)-new Date(b.date)),[exams]);
 
-    const subRet=useMemo(()=>SUBS.map(s=>{
-        const sc=flashcards.filter(c=>c.sub===s.id&&c.totalReviews>0);
-        const ret=sc.length?Math.round(sc.reduce((a,c)=>a+SM2.getRetention(c),0)/sc.length):null;
-        return{...s,ret,count:sc.length,due:flashcards.filter(c=>c.sub===s.id&&SM2.isDue(c)).length};
-    }).filter(s=>s.count>0),[flashcards]);
+    const buildReport=(list,max,sections)=>{
+        if(!list.length)return null;
+        const totals=list.map(e=>e.tot||0);
+        const recent=avg(totals.slice(-3));
+        const prevSlice=totals.slice(-6,-3);
+        const prev=avg(prevSlice.length?prevSlice:totals.slice(0,-3));
+        const latest=list[list.length-1]?.tot||0;
+        const rows=sections.map(sec=>{
+            const vals=list.map(e=>e[sec.net]||0);
+            const wrongs=list.reduce((a,e)=>a+iVal(e[sec.wrong]),0);
+            const recentAvg=avg(vals.slice(-3));
+            const prevAvg=avg(vals.slice(-6,-3).length?vals.slice(-6,-3):vals.slice(0,-3));
+            const latestVal=list[list.length-1]?.[sec.net]||0;
+            return{
+                ...sec,
+                latest:latestVal,
+                recent:recentAvg,
+                prev:prevAvg,
+                delta:Math.round((recentAvg-prevAvg)*10)/10,
+                wrongs,
+                pct:Math.round((latestVal/sec.max)*100)
+            };
+        }).sort((a,b)=>a.pct-b.pct);
+        const weakest=rows[0]||null;
+        const strongest=[...rows].sort((a,b)=>b.pct-a.pct)[0]||null;
+        return{
+            count:list.length,
+            latest,
+            avg:avg(totals),
+            best:Math.max(...totals),
+            recent,
+            prev,
+            delta:Math.round((recent-prev)*10)/10,
+            pct:Math.round((latest/max)*100),
+            weakest,
+            strongest,
+            rows,
+            max
+        };
+    };
 
-    const dueQueue=useMemo(()=>flashcards.filter(c=>SM2.isDue(c)).sort((a,b)=>SM2.getRetention(a)-SM2.getRetention(b)),[flashcards]);
+    const tytReport=useMemo(()=>buildReport(tytExams,120,[
+        {label:'Türkçe',net:'tN',wrong:'turkY',max:40,color:'#29b6f6'},
+        {label:'Matematik',net:'mN',wrong:'matY',max:40,color:'#6c63ff'},
+        {label:'Fen',net:'fN',wrong:'fenY',max:20,color:'#00c853'},
+        {label:'Sosyal',net:'sN',wrong:'sosY',max:20,color:'#ff9800'}
+    ]),[tytExams]);
 
-    // Score predictor (TYT)
-    const scorePred=useMemo(()=>{
-        const tyt=[...exams].filter(e=>e.examType==='TYT'||!e.examType).sort((a,b)=>new Date(a.date)-new Date(b.date));
-        if(tyt.length<3)return null;
-        const tots=tyt.map(e=>e.tot||0);
-        const reg=linReg(tots);if(!reg)return null;
-        const n=tots.length;
-        const predicted=reg.predict(n+2);
-        const current=tots.slice(-3).reduce((a,b)=>a+b,0)/3;
-        return{current:current.toFixed(1),predicted:Math.min(120,predicted).toFixed(1),slope:reg.slope.toFixed(2),exams:n,positive:reg.slope>0};
-    },[exams]);
+    const aytReport=useMemo(()=>buildReport(aytSayExams,80,[
+        {label:'Matematik',net:'mN',wrong:'matY',max:40,color:'#6c63ff'},
+        {label:'Fizik',net:'fN',wrong:'fizY',max:14,color:'#00c853'},
+        {label:'Kimya',net:'kN',wrong:'kimY',max:13,color:'#ffd600'},
+        {label:'Biyoloji',net:'bN',wrong:'bioY',max:13,color:'#ff5252'}
+    ]),[aytSayExams]);
 
-    const aytPred=useMemo(()=>{
-        const ayt=[...exams].filter(e=>e.examType==='AYT').sort((a,b)=>new Date(a.date)-new Date(b.date));
-        if(ayt.length<3)return null;
-        const tots=ayt.map(e=>e.tot||0);
-        const reg=linReg(tots);if(!reg)return null;
-        const predicted=reg.predict(tots.length+2);
-        const current=tots.slice(-3).reduce((a,b)=>a+b,0)/3;
-        return{current:current.toFixed(1),predicted:Math.min(80,predicted).toFixed(1),slope:reg.slope.toFixed(2),exams:tots.length,positive:reg.slope>0};
-    },[exams]);
+    const topicRows=useMemo(()=>MUF.map(track=>track.topics.map(topic=>{
+        const st=(topics[track.id]||{})[topic]||'not_started';
+        const relatedSessions=sessions.filter(s=>(s.examType||'TYT')===track.exam && s.subject===track.subject && topicMatch(s.topic,topic));
+        const relatedMistakes=mistakes.filter(m=>m.subject===track.subject && topicMatch(m.topic,topic));
+        const q=relatedSessions.reduce((a,s)=>a+qInt(s),0);
+        const last=relatedSessions.length?[...relatedSessions].sort((a,b)=>new Date(b.date)-new Date(a.date))[0].date:null;
+        const gap=last?diffYmd(last,td()):999;
+        const risk=(st==='not_started'?22:st==='learning'?14:st==='practicing'?8:0)+(relatedMistakes.filter(m=>!(m.resolved||m.closed)).length*12)+(gap>14?16:gap>7?10:gap>3?5:0)+(q===0?8:q<25?4:0);
+        return{trackId:track.id,exam:track.exam,subject:track.subject,trackName:track.name,color:track.color,topic,status:st,questions:q,mistakeCount:relatedMistakes.length,openMistakes:relatedMistakes.filter(m=>!(m.resolved||m.closed)).length,lastStudy:last,gap,risk};
+    })).flat().sort((a,b)=>b.risk-a.risk),[topics,sessions,mistakes]);
 
-    // Forgetting curve chart
+    const weakTYT=useMemo(()=>topicRows.filter(x=>x.exam==='TYT').slice(0,8),[topicRows]);
+    const weakAYT=useMemo(()=>topicRows.filter(x=>x.exam==='AYT').slice(0,8),[topicRows]);
+
+    const diagnosis=useMemo(()=>{
+        const items=[];
+        if(tytReport){
+            items.push({
+                title:'TYT Teşhisi',
+                lines:[
+                    `Son TYT netin ${tytReport.latest.toFixed(1)}/120 (${tytReport.pct}%).`,
+                    `${tytReport.delta>=0?'+':''}${tytReport.delta.toFixed(1)} puanlık son dönem trendi ${tytReport.delta<0?'aşağı':'yukarı'} yönlü.`,
+                    tytReport.weakest?`En kırılgan alan: ${tytReport.weakest.label} (${tytReport.weakest.latest.toFixed(1)}/${tytReport.weakest.max}).`:''
+                ].filter(Boolean)
+            });
+        }
+        if(aytReport){
+            items.push({
+                title:'AYT Sayısal Teşhisi',
+                lines:[
+                    `Son AYT netin ${aytReport.latest.toFixed(1)}/80 (${aytReport.pct}%).`,
+                    `${aytReport.delta>=0?'+':''}${aytReport.delta.toFixed(1)} puanlık son dönem trendi ${aytReport.delta<0?'aşağı':'yukarı'} yönlü.`,
+                    aytReport.weakest?`En kırılgan alan: ${aytReport.weakest.label} (${aytReport.weakest.latest.toFixed(1)}/${aytReport.weakest.max}).`:''
+                ].filter(Boolean)
+            });
+        }
+        if(weakTYT[0])items.push({title:'TYT Konu Riski',lines:[`${weakTYT[0].trackName} / ${weakTYT[0].topic} şu an en riskli TYT konusu.`,`${weakTYT[0].openMistakes} açık hata · ${weakTYT[0].questions} soru · ${weakTYT[0].lastStudy?fd(weakTYT[0].lastStudy):'henüz çalışma yok'}`]});
+        if(weakAYT[0])items.push({title:'AYT Konu Riski',lines:[`${weakAYT[0].trackName} / ${weakAYT[0].topic} şu an en riskli AYT konusu.`,`${weakAYT[0].openMistakes} açık hata · ${weakAYT[0].questions} soru · ${weakAYT[0].lastStudy?fd(weakAYT[0].lastStudy):'henüz çalışma yok'}`]});
+        return items;
+    },[tytReport,aytReport,weakTYT,weakAYT]);
+
+    const sourceAnalytics=useMemo(()=>{
+        const map={};
+        const ensure=name=>{const key=srcName(name);if(!map[key])map[key]={name:key,questions:0,minutes:0,examCount:0,normNetSum:0,mistakes:0,openMistakes:0};return map[key]};
+        sessions.forEach(s=>{const row=ensure(s.source);row.questions+=qInt(s);row.minutes+=dInt(s);});
+        exams.forEach(e=>{const row=ensure(e.source||e.title);row.examCount+=1;row.normNetSum+=((e.tot||0)/(e.examType==='AYT'?80:120))*100;});
+        mistakes.forEach(m=>{const row=ensure(m.source);row.mistakes+=1;if(!(m.resolved||m.closed))row.openMistakes+=1;});
+        return Object.values(map).map(r=>({...r,avgNorm:r.examCount?Math.round((r.normNetSum/r.examCount)*10)/10:null,efficiency:Math.round(r.questions + r.minutes*0.25 + (r.avgNorm||0)*4 - r.openMistakes*8)})).sort((a,b)=>b.efficiency-a.efficiency);
+    },[sessions,exams,mistakes]);
+
+    const reviewItems=useMemo(()=>{
+        const cards=flashcards.map(c=>({id:`fc-${c.id}`,kind:'flashcard',eligible:['TYT','AYT'],sub:c.sub,subLabel:SUBS.find(s=>s.id===c.sub)?.name||c.sub,question:c.front,answer:c.back,meta:`Kart · ${c.tag||'etiketsiz'}`,priority:SM2.isDue(c)?0:1}));
+        const errs=mistakes.map(m=>({id:`ms-${m.id}`,kind:'mistake',eligible:['TYT','AYT'],sub:m.subject,subLabel:SUBS.find(s=>s.id===m.subject)?.name||m.subject,question:`${m.topic} konusunda neyi yanlış yaptığını anlat ve doğru yöntemi söyle.`,answer:`Hata: ${m.desc||m.description||'—'}${m.logic||m.correctLogic?`\nDoğru yaklaşım: ${m.logic||m.correctLogic}`:''}`,meta:`Kara Defter${m.source?` · ${m.source}`:''}`,priority:(m.resolved||m.closed)?2:0}));
+        const topicsQ=topicRows.slice(0,20).map(t=>({id:`tp-${t.trackId}-${norm(t.topic)}`,kind:'topic',eligible:[t.exam],sub:t.subject,subLabel:t.trackName,question:`${t.topic} konusunu 1-2 dakikada sözlü özetle. Temel kuralı, kritik formülü veya ayırt edici noktayı söyle.`,answer:`Durum: ${TSTATUS[t.status]?.l||'Başlanmadı'} · Risk: ${t.risk} · Soru: ${t.questions} · Açık hata: ${t.openMistakes}.`,meta:`${t.exam} konu tekrarı`,priority:t.risk>=35?0:1}));
+        return [...cards,...errs,...topicsQ];
+    },[flashcards,mistakes,topicRows]);
+
+    const reviewSubOptions=useMemo(()=>{
+        const map={};
+        reviewItems.forEach(i=>{if(i.eligible.includes(reviewField))map[i.sub]=i.subLabel;});
+        return [{value:'all',label:'Tümü'},...Object.entries(map).map(([value,label])=>({value,label}))];
+    },[reviewItems,reviewField]);
+
+    const buildReview=(mode='all')=>{
+        let pool=reviewItems.filter(i=>i.eligible.includes(reviewField));
+        if(reviewSub!=='all')pool=pool.filter(i=>i.sub===reviewSub);
+        if(mode==='priority')pool=pool.filter(i=>i.priority===0);
+        pool=pool.sort((a,b)=>a.priority-b.priority).slice(0,40);
+        setReviewQueue(pool);
+        setReviewIx(0);
+        setReviewShow(false);
+    };
+    const currentReview=reviewQueue[reviewIx]||null;
+
     useEffect(()=>{
-        if(!curveRef.current||tab!=='curves')return;
-        if(curveCI.current){curveCI.current.destroy();curveCI.current=null}
-        const stabilities=[{s:1,l:'1g (Tekrar)',c:'#ff5252'},{s:6,l:'6g (İyi)',c:'#ffd600'},{s:21,l:'21g (Güçlü)',c:'#00c853'},{s:60,l:'60g (Uzman)',c:'#6c63ff'},{s:120,l:'120g (Usta)',c:'#a855f7'}];
-        const days=Array.from({length:61},(_,i)=>i);
-        curveCI.current=new Chart(curveRef.current,{type:'line',
-            data:{labels:days.map(d=>d===0?'Şimdi':`${d}g`),datasets:stabilities.map(({s,l,c})=>({
-                label:l,data:days.map(d=>SM2.retention(d,s)),borderColor:c,backgroundColor:'transparent',fill:false,tension:.4,borderWidth:2,pointRadius:0
-            }))},
-            options:{responsive:true,maintainAspectRatio:false,
-                plugins:{legend:{labels:{color:'#9ca3af',font:{size:10},boxWidth:10}},
-                    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: %${ctx.raw}`}}},
-                scales:{y:{beginAtZero:true,max:100,ticks:{color:'#6b7280',font:{size:9},callback:v=>`%${v}`},grid:{color:'#1a1a2e'}},
-                    x:{ticks:{color:'#6b7280',font:{size:8},maxTicksLimit:10},grid:{color:'#1a1a2e22'}}}}
-        });
-        return()=>{if(curveCI.current){curveCI.current.destroy();curveCI.current=null}};
-    },[tab]);
+        if(tab!=='tyt' || !tytRef.current || !tytExams.length) return;
+        if(tytCI.current){tytCI.current.destroy();tytCI.current=null}
+        tytCI.current=new Chart(tytRef.current,{type:'line',data:{labels:tytExams.map(e=>fd(e.date)),datasets:[{label:'TYT Net',data:tytExams.map(e=>e.tot||0),borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.14)',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{y:{beginAtZero:true,max:120,ticks:{color:'#6b7280'},grid:{color:'#1a1a2e'}},x:{ticks:{color:'#6b7280'},grid:{display:false}}}}});
+        return()=>{if(tytCI.current){tytCI.current.destroy();tytCI.current=null}};
+    },[tab,tytExams]);
 
-    // Subject retention chart
     useEffect(()=>{
-        if(!retBarRef.current||tab!=='subjects'||!subRet.length)return;
-        if(retBarCI.current){retBarCI.current.destroy();retBarCI.current=null}
-        retBarCI.current=new Chart(retBarRef.current,{type:'bar',
-            data:{labels:subRet.map(s=>s.name),datasets:[{data:subRet.map(s=>s.ret||0),backgroundColor:subRet.map(s=>retC(s.ret||0)+'99'),borderColor:subRet.map(s=>retC(s.ret||0)),borderWidth:1,borderRadius:6}]},
-            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-                scales:{y:{beginAtZero:true,max:100,ticks:{color:'#6b7280',callback:v=>`%${v}`},grid:{color:'#1a1a2e'}},
-                    x:{ticks:{color:'#6b7280',font:{size:10}},grid:{display:false}}}}
-        });
-        return()=>{if(retBarCI.current){retBarCI.current.destroy();retBarCI.current=null}};
-    },[tab,subRet]);
+        if(tab!=='ayt' || !aytRef.current || !aytSayExams.length) return;
+        if(aytCI.current){aytCI.current.destroy();aytCI.current=null}
+        aytCI.current=new Chart(aytRef.current,{type:'line',data:{labels:aytSayExams.map(e=>fd(e.date)),datasets:[{label:'AYT Sayısal Net',data:aytSayExams.map(e=>e.tot||0),borderColor:'#ff9800',backgroundColor:'rgba(255,152,0,.14)',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{y:{beginAtZero:true,max:80,ticks:{color:'#6b7280'},grid:{color:'#1a1a2e'}},x:{ticks:{color:'#6b7280'},grid:{display:false}}}}});
+        return()=>{if(aytCI.current){aytCI.current.destroy();aytCI.current=null}};
+    },[tab,aytSayExams]);
 
-    const grade=stats.avgRet>=90?'A+':stats.avgRet>=80?'A':stats.avgRet>=70?'B':stats.avgRet>=60?'C':stats.avgRet>=50?'D':'F';
-    const tabs=[{id:'dashboard',l:'🧠 Panel'},{id:'queue',l:`⚠️ Bugün(${stats.due})`},{id:'curves',l:'📈 Eğriler'},{id:'subjects',l:'📊 Dersler'},{id:'predictor',l:'🔮 Tahmin'}];
+    useEffect(()=>{
+        if(tab!=='sources' || !srcRef.current || !sourceAnalytics.length) return;
+        if(srcCI.current){srcCI.current.destroy();srcCI.current=null}
+        const top=sourceAnalytics.slice(0,6);
+        srcCI.current=new Chart(srcRef.current,{type:'bar',data:{labels:top.map(x=>x.name),datasets:[{label:'Soru',data:top.map(x=>x.questions),backgroundColor:'#6c63ff88',borderRadius:6},{label:'Ortalama % Net',data:top.map(x=>x.avgNorm||0),backgroundColor:'#00c85366',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{y:{beginAtZero:true,ticks:{color:'#6b7280'},grid:{color:'#1a1a2e'}},x:{ticks:{color:'#6b7280',font:{size:9}},grid:{display:false}}}}});
+        return()=>{if(srcCI.current){srcCI.current.destroy();srcCI.current=null}};
+    },[tab,sourceAnalytics]);
+
+    const tabs=[
+        {id:'tyt',l:'TYT Raporu'},
+        {id:'ayt',l:'AYT Sayısal'},
+        {id:'weak',l:'Zayıf Konular'},
+        {id:'diagnosis',l:'Deneme Teşhisi'},
+        {id:'sources',l:'Kaynak Verimi'},
+        {id:'review',l:'Tekrar'}
+    ];
 
     return<div className="space-y-4">
-        <div style={{background:'radial-gradient(ellipse at 50% 0%, rgba(108,99,255,.25) 0%, transparent 70%)',borderRadius:'20px',padding:'20px',border:'1px solid rgba(108,99,255,.25)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <div>
-                    <h1 style={{fontSize:'22px',fontWeight:'bold',color:'#fff',margin:'0 0 4px'}}>🧠 Beyin Laboratuvarı</h1>
-                    <p style={{fontSize:'12px',color:'#9ca3af',margin:0}}>SuperMemo SM-2 · Ebbinghaus Eğrisi · Puan Tahmini</p>
-                </div>
-                <div style={{textAlign:'center',backgroundColor:'rgba(0,0,0,.4)',borderRadius:'16px',padding:'12px 18px',border:'1px solid #2a2a3e'}}>
-                    <div style={{fontSize:'30px',fontWeight:'bold',color:retC(stats.avgRet)}}>{grade}</div>
-                    <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Hafıza Notu</div>
-                </div>
-            </div>
+        <div style={{background:'radial-gradient(ellipse at 50% 0%, rgba(108,99,255,.18) 0%, transparent 70%)',borderRadius:'20px',padding:'20px',border:'1px solid rgba(108,99,255,.22)'}}>
+            <h1 style={{fontSize:'22px',fontWeight:'bold',color:'#fff',margin:'0 0 4px'}}>🧠 Beyin Laboratuvarı</h1>
+            <p style={{fontSize:'12px',color:'#9ca3af',margin:0}}>TYT ve AYT'yi ayrı ele alan, zayıf konuları ve deneme verisini yorumlayan analiz alanı</p>
         </div>
 
         <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
             {tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'6px 12px',borderRadius:'999px',fontSize:'11px',fontWeight:'600',border:'none',cursor:'pointer',backgroundColor:tab===t.id?'#6c63ff':'#1a1a2e',color:tab===t.id?'#fff':'#9ca3af',whiteSpace:'nowrap'}}>{t.l}</button>)}
         </div>
 
-        {tab==='dashboard'&&<div className="space-y-4">
-            {stats.critical>0&&<div style={{backgroundColor:'rgba(255,82,82,.08)',border:'1px solid rgba(255,82,82,.4)',borderRadius:'14px',padding:'14px',display:'flex',alignItems:'center',gap:'12px'}}>
-                <span style={{fontSize:'24px'}}>⚠️</span>
-                <div><div style={{fontSize:'14px',fontWeight:'bold',color:'#ff5252'}}>{stats.critical} kart kritik seviyede (%40 altı)</div>
-                    <div style={{fontSize:'12px',color:'#9ca3af'}}>En kısa sürede tekrar et!</div></div>
-            </div>}
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
-                <SRRing pct={stats.avgRet} size={90} label="Ort. Hafıza"/>
-                <SRRing pct={stats.total>0?Math.round(stats.due/stats.total*100):0} size={90} label="Bugün Oran"/>
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                {[{v:stats.totalReps,l:'Toplam Tekrar',c:'#6c63ff',i:'🔁'},{v:stats.avgEF,l:'Ort. Kolaylık (EF)',c:'#00c853',i:'📊'},{v:`${stats.avgInt}g`,l:'Ort. Aralık',c:'#ffd600',i:'📅'},{v:stats.due,l:'Bugün Bekliyor',c:'#ff5252',i:'⚠️'}
-                ].map((x,i)=><Card key={i} style={{padding:'12px'}}>
-                    <div style={{fontSize:'18px',marginBottom:'2px'}}>{x.i}</div>
-                    <div style={{fontSize:'18px',fontWeight:'bold',color:x.c}}>{x.v}</div>
-                    <div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div>
-                </Card>)}
-            </div>
-            <Card title="💡 SM-2 Nasıl Çalışır?">
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',fontSize:'12px'}}>
-                    {[{l:'😰 Tekrar',d:'1g sonra tekrar→EF sıfırlanmaz',c:'#ff5252'},{l:'😟 Zor',d:'Kısa aralık, EF düşer',c:'#ff9800'},{l:'😊 İyi',d:'EF × önceki aralık',c:'#6c63ff'},{l:'😄 Kolay',d:'EF artar, aralık uzar',c:'#00c853'}
-                    ].map((x,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px'}}>
-                        <div style={{color:x.c,fontWeight:'600',marginBottom:'2px'}}>{x.l}</div>
-                        <div style={{color:'#6b7280',fontSize:'11px'}}>{x.d}</div>
-                    </div>)}
+        {tab==='tyt'&&<div className="space-y-4">
+            {!tytReport?<Card><p style={{color:'#6b7280',textAlign:'center',padding:'20px'}}>Henüz TYT denemesi yok. Analiz için birkaç TYT denemesi ekle.</p></Card>:<>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'10px'}}>
+                    {[{l:'Son Net',v:tytReport.latest.toFixed(1),c:'#6c63ff'},{l:'Ortalama',v:tytReport.avg.toFixed(1),c:'#9ca3af'},{l:'En İyi',v:tytReport.best.toFixed(1),c:'#00c853'},{l:'Trend',v:`${tytReport.delta>=0?'+':''}${tytReport.delta.toFixed(1)}`,c:tytReport.delta>=0?'#00c853':'#ff5252'}].map((x,i)=><Card key={i} style={{padding:'12px'}}><div style={{fontSize:'18px',fontWeight:'bold',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></Card>)}
                 </div>
-                <div style={{backgroundColor:'#0a0a0f',borderRadius:'10px',padding:'10px',marginTop:'8px',fontFamily:'monospace',fontSize:'11px',color:'#6c63ff',lineHeight:'1.6'}}>
-                    EF_new = max(1.3, EF + 0.1 - (5-q)(0.08+(5-q)×0.02))<br/>
-                    <span style={{color:'#ffd600'}}>Int: rep1=1g, rep2=6g, repN=Int×EF</span><br/>
-                    <span style={{color:'#00c853'}}>R(t) = e^(-t/stabiliite) ← Ebbinghaus</span>
-                </div>
-            </Card>
-        </div>}
-
-        {tab==='queue'&&<div className="space-y-3">
-            <div style={{fontSize:'14px',color:'#9ca3af'}}>{dueQueue.length} kart tekrar bekliyor (en kritikten sıralı)</div>
-            {dueQueue.length===0?<Card><p style={{color:'#00c853',textAlign:'center',padding:'20px',fontSize:'14px'}}>🎉 Bugün için tüm tekrarlar tamam!</p></Card>:
-            dueQueue.map((c,i)=>{
-                const sub=SUBS.find(s=>s.id===c.sub);const ret=SM2.getRetention(c);
-                const overdue=c.nextReview&&c.nextReview<td()?Math.floor((Date.now()-new Date(c.nextReview+'T12:00:00').getTime())/86400000):0;
-                return<Card key={c.id} style={{borderLeft:`3px solid ${retC(ret)}`}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <div style={{flex:1}}>
-                            <div style={{display:'flex',gap:'6px',marginBottom:'4px',flexWrap:'wrap',alignItems:'center'}}>
-                                <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',backgroundColor:sub?.color+'22',color:sub?.color,fontWeight:'600'}}>{sub?.icon} {sub?.name}</span>
-                                {overdue>0&&<span style={{fontSize:'11px',color:'#ff5252',fontWeight:'700'}}>+{overdue}g gecikti</span>}
-                            </div>
-                            <div style={{fontSize:'14px',fontWeight:'600',color:'#fff',marginBottom:'4px'}}>{c.front}</div>
-                            <div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#6b7280'}}>
-                                <span>EF: {(c.ef||2.5).toFixed(2)}</span><span>Aralık: {c.interval||0}g</span><span>Tekrar: {c.totalReviews||0}×</span>
-                            </div>
-                        </div>
-                        <SRRing pct={ret} size={52}/>
-                    </div>
-                </Card>;
-            })}
-        </div>}
-
-        {tab==='curves'&&<div className="space-y-4">
-            <Card title="📈 Ebbinghaus Unutma Eğrileri" subtitle="60 günlük hafıza tutma simülasyonu">
-                <div style={{height:'260px'}}><canvas ref={curveRef}/></div>
-                <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'10px',fontSize:'11px',color:'#6b7280',flexWrap:'wrap'}}>
-                    <div style={{width:'3px',height:'16px',backgroundColor:'rgba(255,255,255,.2)',borderRadius:'1px'}}/>
-                    <span>%90 üstü ideal · %50 altı kritik · SM-2 her tekrarda eğriyi yukarı kaydırır</span>
-                </div>
-            </Card>
-            <Card title="🧮 Formüller">
-                <div style={{backgroundColor:'#0a0a0f',borderRadius:'12px',padding:'12px',fontFamily:'monospace',fontSize:'12px',lineHeight:'1.8'}}>
-                    <div style={{color:'#6c63ff'}}>Unutma: R(t) = e^(-t / S)</div>
-                    <div style={{color:'#ffd600'}}>SM-2: EF += 0.1 - (5-q)(0.08+(5-q)×0.02)</div>
-                    <div style={{color:'#00c853'}}>Aralık: rep1=1g, rep2=6g, repN=Int(N-1)×EF</div>
-                    <div style={{color:'#ff9800'}}>q&lt;3 → başa dön (interval=1, reps=0)</div>
-                </div>
-                <p style={{fontSize:'11px',color:'#6b7280',marginTop:'8px'}}>q: kalite puanı (1-5) | EF: kolaylık faktörü (≥1.3) | S: stabilite ≈ aralık</p>
-            </Card>
-        </div>}
-
-        {tab==='subjects'&&<div className="space-y-3">
-            {subRet.length===0?<Card><p style={{color:'#6b7280',textAlign:'center',padding:'20px'}}>Henüz tekrar yapılmış kart yok.</p></Card>:<>
-                <Card title="📊 Derse Göre Hafıza Tutma"><div style={{height:'180px'}}><canvas ref={retBarRef}/></div></Card>
-                {[...subRet].sort((a,b)=>(a.ret||0)-(b.ret||0)).map(s=>(
-                    <Card key={s.id}>
-                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
-                            <span style={{fontSize:'14px',fontWeight:'600',color:s.color}}>{s.icon} {s.name}</span>
-                            <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
-                                {s.due>0&&<span style={{fontSize:'11px',color:'#ff5252',fontWeight:'700'}}>{s.due} bekliyor</span>}
-                                <span style={{fontSize:'16px',fontWeight:'bold',color:retC(s.ret||0)}}>%{s.ret||0}</span>
-                            </div>
-                        </div>
-                        <PBar value={s.ret||0} max={100} color={retC(s.ret||0)} label={false} size="md"/>
-                        <div style={{fontSize:'11px',color:'#6b7280',marginTop:'4px'}}>{s.count} aktif kart</div>
-                    </Card>
-                ))}
+                <Card title="TYT Net Trendi" subtitle="Toplam net, 120 üst sınırıyla değerlendirilir"><div style={{height:'220px'}}><canvas ref={tytRef}/></div></Card>
+                <Card title="TYT Bölüm Analizi" subtitle="Türkçe, Matematik, Fen ve Sosyal ayrı değerlendirilir">
+                    <div className="space-y-2">{tytReport.rows.map(r=><div key={r.label} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'center',marginBottom:'6px'}}><span style={{fontSize:'13px',fontWeight:'700',color:r.color}}>{r.label}</span><span style={{fontSize:'11px',color:r.delta>=0?'#00c853':'#ff5252'}}>{r.latest.toFixed(1)}/{r.max} · {r.delta>=0?'+':''}{r.delta.toFixed(1)}</span></div><PBar value={r.latest} max={r.max} color={r.color} label={false} size="sm"/><div style={{display:'flex',gap:'10px',flexWrap:'wrap',fontSize:'10px',color:'#9ca3af',marginTop:'6px'}}><span>Son 3 ort.: {r.recent.toFixed(1)}</span><span>Önceki: {r.prev.toFixed(1)}</span><span>Toplam yanlış: {r.wrongs}</span></div></div>)}</div>
+                </Card>
             </>}
         </div>}
 
-        {tab==='predictor'&&<div className="space-y-4">
-            <p style={{fontSize:'12px',color:'#6b7280'}}>Lineer regresyon — en az 3 deneme gerekli. Tahmin referans amaçlıdır.</p>
-            {/* TYT predictor */}
-            <div>
-                <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}><ExamBadge type="TYT" size="md"/><span style={{color:'#fff',fontWeight:'600'}}>TYT Tahmin (max 120)</span></div>
-                {!scorePred?<Card><p style={{color:'#6b7280',fontSize:'13px',padding:'8px 0'}}>Yeterli TYT denemesi yok ({exams.filter(e=>!e.examType||e.examType==='TYT').length}/3)</p></Card>:
-                <Card style={{border:'1px solid rgba(108,99,255,.3)'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'8px'}}>
-                        <div>
-                            <div style={{fontSize:'12px',color:'#9ca3af'}}>Son 3 ort: {scorePred.current}</div>
-                            <div style={{fontSize:'28px',fontWeight:'bold',color:'#6c63ff'}}>{scorePred.predicted}</div>
-                            <div style={{fontSize:'13px',color:scorePred.positive?'#00c853':'#ff5252'}}>{scorePred.positive?'📈':'📉'} {scorePred.positive?'+':''}{scorePred.slope} /deneme</div>
-                        </div>
-                        <PBar value={parseFloat(scorePred.predicted)} max={120} color="#6c63ff" label={false} size="xl"/>
-                    </div>
-                </Card>}
-            </div>
-            {/* AYT predictor */}
-            <div>
-                <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}><ExamBadge type="AYT" size="md"/><span style={{color:'#fff',fontWeight:'600'}}>AYT Sayısal Tahmin (max 80)</span></div>
-                {!aytPred?<Card><p style={{color:'#6b7280',fontSize:'13px',padding:'8px 0'}}>Yeterli AYT denemesi yok ({exams.filter(e=>e.examType==='AYT').length}/3)</p></Card>:
-                <Card style={{border:'1px solid rgba(255,152,0,.3)'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'8px'}}>
-                        <div>
-                            <div style={{fontSize:'12px',color:'#9ca3af'}}>Son 3 ort: {aytPred.current}</div>
-                            <div style={{fontSize:'28px',fontWeight:'bold',color:'#ff9800'}}>{aytPred.predicted}</div>
-                            <div style={{fontSize:'13px',color:aytPred.positive?'#00c853':'#ff5252'}}>{aytPred.positive?'📈':'📉'} {aytPred.positive?'+':''}{aytPred.slope} /deneme</div>
-                        </div>
-                        <PBar value={parseFloat(aytPred.predicted)} max={80} color="#ff9800" label={false} size="xl"/>
-                    </div>
-                </Card>}
-            </div>
+        {tab==='ayt'&&<div className="space-y-4">
+            {!aytReport?<Card><p style={{color:'#6b7280',textAlign:'center',padding:'20px'}}>Henüz AYT Sayısal denemesi yok. Sayısal alanında deneme ekleyince analiz aktif olur.</p></Card>:<>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'10px'}}>
+                    {[{l:'Son Net',v:aytReport.latest.toFixed(1),c:'#ff9800'},{l:'Ortalama',v:aytReport.avg.toFixed(1),c:'#9ca3af'},{l:'En İyi',v:aytReport.best.toFixed(1),c:'#00c853'},{l:'Trend',v:`${aytReport.delta>=0?'+':''}${aytReport.delta.toFixed(1)}`,c:aytReport.delta>=0?'#00c853':'#ff5252'}].map((x,i)=><Card key={i} style={{padding:'12px'}}><div style={{fontSize:'18px',fontWeight:'bold',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></Card>)}
+                </div>
+                <Card title="AYT Sayısal Net Trendi" subtitle="Toplam net, 80 üst sınırıyla değerlendirilir"><div style={{height:'220px'}}><canvas ref={aytRef}/></div></Card>
+                <Card title="AYT Sayısal Bölüm Analizi" subtitle="Matematik, Fizik, Kimya, Biyoloji ayrı değerlendirilir">
+                    <div className="space-y-2">{aytReport.rows.map(r=><div key={r.label} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'center',marginBottom:'6px'}}><span style={{fontSize:'13px',fontWeight:'700',color:r.color}}>{r.label}</span><span style={{fontSize:'11px',color:r.delta>=0?'#00c853':'#ff5252'}}>{r.latest.toFixed(1)}/{r.max} · {r.delta>=0?'+':''}{r.delta.toFixed(1)}</span></div><PBar value={r.latest} max={r.max} color={r.color} label={false} size="sm"/><div style={{display:'flex',gap:'10px',flexWrap:'wrap',fontSize:'10px',color:'#9ca3af',marginTop:'6px'}}><span>Son 3 ort.: {r.recent.toFixed(1)}</span><span>Önceki: {r.prev.toFixed(1)}</span><span>Toplam yanlış: {r.wrongs}</span></div></div>)}</div>
+                </Card>
+            </>}
+        </div>}
+
+        {tab==='weak'&&<div className="space-y-4">
+            <Card title="TYT Risk Konuları" subtitle="Hata, son temas ve çözülmüş soru sayısına göre sıralı">
+                {weakTYT.length===0?<p style={{color:'#6b7280',fontSize:'13px'}}>Henüz TYT konu verisi yeterli değil.</p>:<div className="space-y-2">{weakTYT.map((r,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}><div><div style={{fontSize:'13px',fontWeight:'700',color:r.color}}>{r.trackName}</div><div style={{fontSize:'13px',color:'#fff',marginTop:'2px'}}>{r.topic}</div></div><span style={{fontSize:'11px',padding:'3px 8px',borderRadius:'999px',backgroundColor:r.risk>=40?'rgba(255,82,82,.12)':'rgba(255,152,0,.12)',color:r.risk>=40?'#ff5252':'#ff9800'}}>Risk {r.risk}</span></div><div style={{display:'flex',gap:'10px',flexWrap:'wrap',fontSize:'11px',color:'#9ca3af',marginTop:'6px'}}><span>📝 {r.questions}</span><span>❌ {r.openMistakes}/{r.mistakeCount}</span><span>{r.lastStudy?`📅 ${fd(r.lastStudy)}`:'çalışılmadı'}</span></div></div>)}</div>}
+            </Card>
+            <Card title="AYT Risk Konuları" subtitle="Özellikle sayısal tarafta açık veren konular">
+                {weakAYT.length===0?<p style={{color:'#6b7280',fontSize:'13px'}}>Henüz AYT konu verisi yeterli değil.</p>:<div className="space-y-2">{weakAYT.map((r,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}><div><div style={{fontSize:'13px',fontWeight:'700',color:r.color}}>{r.trackName}</div><div style={{fontSize:'13px',color:'#fff',marginTop:'2px'}}>{r.topic}</div></div><span style={{fontSize:'11px',padding:'3px 8px',borderRadius:'999px',backgroundColor:r.risk>=40?'rgba(255,82,82,.12)':'rgba(255,152,0,.12)',color:r.risk>=40?'#ff5252':'#ff9800'}}>Risk {r.risk}</span></div><div style={{display:'flex',gap:'10px',flexWrap:'wrap',fontSize:'11px',color:'#9ca3af',marginTop:'6px'}}><span>📝 {r.questions}</span><span>❌ {r.openMistakes}/{r.mistakeCount}</span><span>{r.lastStudy?`📅 ${fd(r.lastStudy)}`:'çalışılmadı'}</span></div></div>)}</div>}
+            </Card>
+        </div>}
+
+        {tab==='diagnosis'&&<div className="space-y-4">
+            {diagnosis.length===0?<Card><p style={{color:'#6b7280',textAlign:'center',padding:'20px'}}>Yeterli veri geldikçe burada yorumlu teşhis görünecek.</p></Card>:diagnosis.map((d,i)=><Card key={i} title={d.title}><div className="space-y-2">{d.lines.map((line,j)=><div key={j} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px',fontSize:'13px',color:'#e5e7eb'}}>{line}</div>)}</div></Card>)}
+        </div>}
+
+        {tab==='sources'&&<div className="space-y-4">
+            <Card title="Kaynak Verimi" subtitle="Kaynak bazlı soru, süre, deneme ve açık hata ilişkisi">
+                {sourceAnalytics.length===0?<p style={{color:'#6b7280',fontSize:'13px'}}>Kaynak adı girmeye başladığında burada verim raporu oluşur.</p>:<><div style={{height:'220px',marginBottom:'12px'}}><canvas ref={srcRef}/></div><div className="space-y-2">{sourceAnalytics.slice(0,8).map((src,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px 12px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',flexWrap:'wrap',alignItems:'center'}}><div style={{fontSize:'13px',fontWeight:'700',color:'#fff'}}>{src.name}</div><div style={{fontSize:'11px',color:'#6c63ff',fontWeight:'700'}}>Skor {src.efficiency}</div></div><div style={{display:'flex',gap:'10px',flexWrap:'wrap',fontSize:'11px',color:'#9ca3af',marginTop:'6px'}}><span>📝 {src.questions} soru</span><span>⏱ {src.minutes} dk</span><span>📊 {src.examCount} deneme</span>{src.avgNorm!==null&&<span>Ort. %{src.avgNorm} net</span>}<span style={{color:src.openMistakes?'#ff5252':'#00c853'}}>❌ {src.openMistakes}/{src.mistakes}</span></div></div>)}</div></>}
+            </Card>
+        </div>}
+
+        {tab==='review'&&<div className="space-y-4">
+            <Card title="Sorularla Tekrar" subtitle="Flashcard, hata kayıtları ve zayıf konulardan tekrar üretir">
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto auto',gap:'8px',alignItems:'end'}}>
+                    <Sel label="Alan" value={reviewField} onChange={setReviewField} options={[{value:'TYT',label:'TYT'},{value:'AYT',label:'AYT'}]}/>
+                    <Sel label="Ders" value={reviewSub} onChange={setReviewSub} options={reviewSubOptions}/>
+                    <Btn onClick={()=>buildReview('priority')} v="warning" s="sm">Öncelikli</Btn>
+                    <Btn onClick={()=>buildReview('all')} s="sm">Tekrar Oluştur</Btn>
+                </div>
+            </Card>
+            {!currentReview?<Card><p style={{color:'#6b7280',textAlign:'center',padding:'20px'}}>Tekrar oluşturmak için filtre seçip başlat. Flashcard, hata ve konu verisi arttıkça tekrar kalitesi yükselir.</p></Card>:<Card title={`${reviewIx+1}/${reviewQueue.length} soru`} subtitle={currentReview.meta}>
+                <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'10px'}}>
+                    <span style={{fontSize:'11px',padding:'3px 9px',borderRadius:'999px',backgroundColor:currentReview.kind==='flashcard'?'rgba(108,99,255,.15)':currentReview.kind==='mistake'?'rgba(255,82,82,.12)':'rgba(255,152,0,.12)',color:currentReview.kind==='flashcard'?'#6c63ff':currentReview.kind==='mistake'?'#ff5252':'#ff9800'}}>{currentReview.kind==='flashcard'?'Flashcard':currentReview.kind==='mistake'?'Kara Defter':'Konu Tekrarı'}</span>
+                    <span style={{fontSize:'11px',padding:'3px 9px',borderRadius:'999px',backgroundColor:'#1a1a2e',color:'#9ca3af'}}>{currentReview.subLabel}</span>
+                </div>
+                <div style={{backgroundColor:'#1a1a2e',borderRadius:'14px',padding:'16px',marginBottom:'10px'}}>
+                    <div style={{fontSize:'12px',color:'#9ca3af',marginBottom:'6px'}}>Soru</div>
+                    <div style={{fontSize:'17px',fontWeight:'700',color:'#fff',whiteSpace:'pre-wrap'}}>{currentReview.question}</div>
+                </div>
+                {reviewShow&&<div style={{backgroundColor:'rgba(0,200,83,.08)',border:'1px solid rgba(0,200,83,.2)',borderRadius:'14px',padding:'16px',marginBottom:'10px'}}><div style={{fontSize:'12px',color:'#9ca3af',marginBottom:'6px'}}>Cevap / Açıklama</div><div style={{fontSize:'14px',color:'#e5e7eb',whiteSpace:'pre-wrap'}}>{currentReview.answer}</div></div>}
+                <div style={{display:'flex',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}>
+                    <Btn onClick={()=>{if(reviewIx>0){setReviewIx(i=>i-1);setReviewShow(false)}}} v="ghost" s="sm" disabled={reviewIx===0}>← Önceki</Btn>
+                    {!reviewShow?<Btn onClick={()=>setReviewShow(true)} v="success">Cevabı Göster</Btn>:<Btn onClick={()=>{if(reviewIx<reviewQueue.length-1){setReviewIx(i=>i+1);setReviewShow(false)}}} disabled={reviewIx>=reviewQueue.length-1}>Sonraki →</Btn>}
+                </div>
+            </Card>}
         </div>}
     </div>;
 });
@@ -982,66 +1039,94 @@ const FormulaBook=memo(()=>{
 // ── TOPIC TRACKING ─────────────────────────────────────────────
 const TSTATUS={not_started:{l:'Başlanmadı',c:'#4a4a5e'},learning:{l:'Öğreniliyor',c:'#ffd600'},practicing:{l:'Pratik',c:'#29b6f6'},mastered:{l:'Tamamlandı',c:'#00c853'}};
 const MUF=[
-    {id:'matematik',name:'Matematik',color:'#6c63ff',d1l:'1. Dönem',d2l:'2. Dönem',
-     d1:['Yönlü Açılar','Trigonometrik Fonk.','Analitik Doğru','Modüler Aritmetik','2. Derece Fonk.','Fonksiyon Dönüşümleri'],
-     d2:['2. Derece 2 Bilinmeyenli','2. Derece Eşitsizlik','Çember','Dairenin Alanı','Katı Cisimler','Olasılık']},
-    {id:'fizik',name:'Fizik',color:'#00c853',d1l:'1. Dönem',d2l:'2. Dönem',
-     d1:['Vektörler','Newton Yasaları','İvmeli Hareket','Serbest Düşme','Atış Hareketleri','Hooke','Momentum','Tork','Denge','Elektrostatik'],
-     d2:['Sığa','Manyetik Alan','Manyetik Kuvvet','EMK','AC','Trafo']},
-    {id:'kimya',name:'Kimya',color:'#ffd600',d1l:'1. Dönem',d2l:'2. Dönem',
-     d1:['Kuantum Modeli','Periyodik Sistem','Elementler','Gaz Yasaları','İdeal Gaz','Çözeltiler','Derişim'],
-     d2:['Koligatif','Çözünürlük','Tepkimelerde Isı','Tepkime Hızı','Kimyasal Denge','Asit-Baz']},
-    {id:'biyoloji',name:'Biyoloji',color:'#ff5252',d1l:'1. Dönem',d2l:'2. Dönem',
-     d1:['Denetleyici Sistem','Duyu Organları','Destek-Hareket','Sindirim'],
-     d2:['Dolaşım','Solunum','Üriner','Üreme','Ekoloji']},
-    {id:'turkce',name:'Türkçe',color:'#29b6f6',d1l:'TYT Konuları',d2l:null,
-     d1:['Sözcükte Anlam','Cümlede Anlam','Paragraf','Anlatım Bozukluğu','Ses Bilgisi','Yazım Kuralları','Noktalama','Sözcük Türleri','Cümle Türleri','Fiilde Çatı'],d2:[]},
+    {id:'tyt_turkce',exam:'TYT',subject:'turkce',name:'Türkçe',color:'#29b6f6',topics:['Sözcükte Anlam','Cümlede Anlam','Paragraf','Anlatım Biçimleri ve Düşünceyi Geliştirme','Sözel Mantık','Ses Bilgisi','Yazım Kuralları','Noktalama İşaretleri','Sözcükte Yapı','İsimler','Sıfatlar','Zamirler','Zarflar','Edat-Bağlaç-Ünlem','Fiiller','Fiilimsi','Ek Fiil','Fiilde Çatı','Cümlenin Ögeleri','Cümle Türleri','Anlatım Bozukluğu']},
+    {id:'tyt_matematik',exam:'TYT',subject:'matematik',name:'Matematik',color:'#6c63ff',topics:['Temel Kavramlar','Sayı Basamakları','Bölme ve Bölünebilme','OBEB-OKEK','Rasyonel Sayılar','Basit Eşitsizlikler','Mutlak Değer','Üslü Sayılar','Köklü Sayılar','Çarpanlara Ayırma','Oran-Orantı','Denklem Çözme','Problemler','Kümeler','Mantık','Fonksiyonlar','Polinomlar','2. Dereceden Denklemler','Permütasyon-Kombinasyon','Binom','Olasılık','İstatistik','Veri Analizi','Doğruda Açı','Üçgenler','Dörtgenler ve Çokgenler','Çember ve Daire','Katı Cisimler','Analitik Geometri']},
+    {id:'tyt_fizik',exam:'TYT',subject:'fizik',name:'Fizik',color:'#00c853',topics:['Fizik Bilimine Giriş','Madde ve Özellikleri','Hareket ve Kuvvet','İş-Güç-Enerji','Isı-Sıcaklık ve Genleşme','Basınç','Kaldırma Kuvveti','Dalgalar','Optik','Elektrik ve Manyetizma']},
+    {id:'tyt_kimya',exam:'TYT',subject:'kimya',name:'Kimya',color:'#ffd600',topics:['Kimya Bilimi','Atom ve Yapısı','Periyodik Sistem','Kimyasal Türler Arası Etkileşimler','Maddenin Halleri','Doğa ve Kimya','Kimyanın Temel Kanunları','Kimyasal Hesaplamalar','Asit-Baz-Tuz','Karışımlar','Endüstride ve Canlılarda Enerji']},
+    {id:'tyt_biyoloji',exam:'TYT',subject:'biyoloji',name:'Biyoloji',color:'#ff5252',topics:['Canlıların Ortak Özellikleri','Canlıların Temel Bileşenleri','Hücre ve Organeller','Madde Geçişleri','Canlıların Sınıflandırılması','Hücresel Solunum','Fotosentez','Mitoz ve Eşeysiz Üreme','Mayoz ve Eşeyli Üreme','Kalıtım','Ekosistem Ekolojisi','Güncel Çevre Sorunları']},
+    {id:'tyt_tarih',exam:'TYT',subject:'tarih',name:'Tarih',color:'#ff9800',topics:['Tarih Bilimi','Uygarlığın Doğuşu ve İlk Uygarlıklar','İlk Türk Devletleri','İslam Tarihi ve Uygarlığı','Türk-İslam Devletleri','Türkiye Tarihi','Beylikten Devlete Osmanlı','Dünya Gücü Osmanlı','Yeniçağ Avrupa','Yakınçağ Avrupa','XX. Yüzyıl Başlarında Osmanlı','Milli Mücadele','Atatürk İlkeleri ve İnkılap Tarihi']},
+    {id:'tyt_cografya',exam:'TYT',subject:'cografya',name:'Coğrafya',color:'#e91e63',topics:['Doğa ve İnsan','Dünya’nın Şekli ve Hareketleri','Coğrafi Konum','Harita Bilgisi','Atmosfer ve İklim','Yeryüzü Şekilleri','Su-Toprak ve Bitkiler','Nüfus ve Yerleşme','Göç','Türkiye’nin Coğrafi Konumu','Türkiye’de Yer Şekilleri ve İklim','Doğal Afetler','Çevre ve Toplum']},
+    {id:'tyt_felsefe',exam:'TYT',subject:'felsefe',name:'Felsefe',color:'#9c27b0',topics:['Felsefenin Konusu','Bilgi Felsefesi','Varlık Felsefesi','Ahlak Felsefesi','Sanat Felsefesi','Din Felsefesi','Siyaset Felsefesi','Bilim Felsefesi','Mantık']},
+    {id:'tyt_din',exam:'TYT',subject:'din',name:'Din Kültürü',color:'#795548',topics:['Bilgi ve İnanç','Din ve İslam','İslam ve İbadet','Gençlik ve Değerler','Gönül Coğrafyamız','İslam Düşüncesinde Yorumlar','Hz. Muhammed’in Örnekliği','Dünya Dinleri']},
+
+    {id:'ayt_matematik',exam:'AYT',subject:'matematik',name:'Matematik',color:'#6c63ff',topics:['Fonksiyonlarda Uygulamalar','Polinomlar','2. Dereceden Denklemler ve Eşitsizlikler','Parabol','Trigonometri','Karmaşık Sayılar','Logaritma','Diziler','Permütasyon-Kombinasyon-Binom','Olasılık','Limit ve Süreklilik','Türev','İntegral','Analitik Geometri']},
+    {id:'ayt_fizik',exam:'AYT',subject:'fizik',name:'Fizik',color:'#00c853',topics:['Vektörler','Newton’un Hareket Yasaları','Bir Boyutta Hareket','İki Boyutta Hareket','Enerji ve Hareket','İtme ve Momentum','Tork ve Denge','Basit Makineler','Elektrik ve Manyetizma','Dalgalar','Optik','Modern Fizik','Atom Fiziği','Nükleer Fizik']},
+    {id:'ayt_kimya',exam:'AYT',subject:'kimya',name:'Kimya',color:'#ffd600',topics:['Modern Atom Teorisi','Gazlar','Sıvı Çözeltiler ve Çözünürlük','Kimyasal Tepkimelerde Enerji','Tepkime Hızları','Kimyasal Denge','Asit-Baz Dengesi','Çözünürlük Dengesi','Elektrokimya','Organik Kimya','Kimya ve Elektrik']},
+    {id:'ayt_biyoloji',exam:'AYT',subject:'biyoloji',name:'Biyoloji',color:'#ff5252',topics:['Sinir Sistemi','Endokrin Sistem','Duyu Organları','Destek ve Hareket Sistemi','Sindirim Sistemi','Dolaşım ve Bağışıklık','Solunum Sistemi','Boşaltım Sistemi','Üreme Sistemi ve Embriyonik Gelişim','Komünite ve Popülasyon Ekolojisi','Genden Proteine','Canlılarda Enerji Dönüşümleri','Bitki Biyolojisi']},
+    {id:'ayt_edebiyat',exam:'AYT',subject:'edebiyat',name:'Edebiyat',color:'#26c6da',topics:['Güzel Sanatlar ve Edebiyat','Metinlerin Sınıflandırılması','Şiir Bilgisi','Edebi Sanatlar','İslamiyet Öncesi Türk Edebiyatı','Halk Edebiyatı','Divan Edebiyatı','Tanzimat Edebiyatı','Servetifünun ve Fecriati','Milli Edebiyat','Cumhuriyet Dönemi Edebiyatı','Edebi Akımlar']},
+    {id:'ayt_tarih1',exam:'AYT',subject:'tarih',name:'Tarih-1',color:'#ff9800',topics:['Tarih ve Zaman','İnsanlığın İlk Dönemleri','Orta Çağ’da Dünya','İlk ve Orta Çağlarda Türk Dünyası','İslam Medeniyetinin Doğuşu','Türklerin İslamiyet’i Kabulü','Yerleşme ve Devletleşme Sürecinde Selçuklu Türkiye’si','Beylikten Devlete Osmanlı','Dünya Gücü Osmanlı','Değişen Dünya Dengeleri Karşısında Osmanlı','Uluslararası İlişkilerde Denge Stratejisi','Devrimler Çağında Değişen Devlet-Toplum İlişkileri','XX. Yüzyıl Başlarında Osmanlı ve Dünya','Milli Mücadele','Atatürkçülük ve Türk İnkılabı']},
+    {id:'ayt_cografya1',exam:'AYT',subject:'cografya',name:'Coğrafya-1',color:'#e91e63',topics:['Doğa ve İnsan','Harita Bilgisi','Atmosfer ve İklim','Yeryüzü Şekilleri','Nüfus ve Yerleşme','Göçler','Ekonomik Faaliyetler','Türkiye’de Tarım-Sanayi-Turizm','Türkiye’de Bölgeler','Çevre ve Toplum']},
+    {id:'ayt_tarih2',exam:'AYT',subject:'tarih',name:'Tarih-2',color:'#ffb74d',topics:['Tarih Bilimine Giriş','Uygarlığın Doğuşu ve İlk Uygarlıklar','İlk Türk Devletleri','İslam Tarihi','Türk-İslam Devletleri','Osmanlı Kültür ve Medeniyeti','XX. Yüzyılda Dünya','Türk Kurtuluş Savaşı','Atatürk Dönemi İç ve Dış Politika','Çağdaş Türk ve Dünya Tarihi']},
+    {id:'ayt_cografya2',exam:'AYT',subject:'cografya',name:'Coğrafya-2',color:'#ec407a',topics:['Doğal Sistemler','Beşeri Sistemler','Ekonomik Faaliyetler','Küresel Ortam: Bölgeler ve Ülkeler','Çevre ve Toplum','Nüfus Politikaları','Türkiye Ekonomisi','Doğal Kaynaklar','Ulaşım-Ticaret-Turizm','Türkiye’nin Bölgesel Kalkınma Projeleri']},
+    {id:'ayt_felsefegrubu',exam:'AYT',subject:'felsefe',name:'Felsefe Grubu',color:'#9c27b0',topics:['Psikoloji Bilimini Tanıyalım','Psikolojinin Temel Süreçleri','Öğrenme Bellek Düşünme','Ruh Sağlığı','Sosyolojiye Giriş','Toplum ve Kültür','Toplumsal Kurumlar','Toplumsal Değişme ve Gelişme','Mantığa Giriş','Klasik Mantık','Sembolik Mantık']},
+    {id:'ayt_din',exam:'AYT',subject:'din',name:'Din Kültürü',color:'#795548',topics:['İnanç','İbadet','Ahlak ve Değerler','Kur’an ve Yorumu','Hz. Muhammed','İslam Düşüncesinde Yorumlar','Dünya Dinleri','Çağdaş Dini Meseleler']}
 ];
 
-const TopPg=memo(({topics,setTopics,addXp,notify})=>{
-    const[tab,setTab]=useState('matematik');
-    const mufSt=id=>{const m=MUF.find(x=>x.id===id);if(!m)return{t:0,m:0};const all=[...m.d1,...(m.d2||[])];const sp=topics[id]||{};return{t:all.length,m:all.filter(t=>sp[t]==='mastered').length}};
-    const upd=(s,t,v)=>setTopics(p=>({...p,[s]:{...(p[s]||{}),[t]:v}}));
-    const markAll=(s,list)=>{setTopics(p=>{const u={...p,[s]:{...(p[s]||{})}};list.forEach(t=>{u[s][t]='mastered'});return u});addXp(20);notify('✅ +20 XP')};
-    const m=MUF.find(x=>x.id===tab);
-    const row=(t,s)=>{const st=(topics[s]||{})[t]||'not_started';const info=TSTATUS[st];return(
-        <div key={t} style={{display:'flex',justifyContent:'space-between',alignItems:'center',backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px 12px',marginBottom:'6px'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                <div style={{width:'8px',height:'8px',borderRadius:'50%',backgroundColor:info.c,flexShrink:0}}/>
-                <span style={{fontSize:'13px',color:st==='mastered'?'#6b7280':'#e5e7eb',textDecoration:st==='mastered'?'line-through':'none'}}>{t}</span>
+const TopPg=memo(({topics,setTopics,addXp,notify,sessions,mistakes})=>{
+    const[examTab,setExamTab]=useState('TYT');
+    const[trackId,setTrackId]=useState('');
+    const today=td();
+    const tracks=useMemo(()=>MUF.filter(x=>x.exam===examTab),[examTab]);
+    useEffect(()=>{if(!tracks.find(t=>t.id===trackId))setTrackId(tracks[0]?.id||'')},[examTab,tracks,trackId]);
+    const upd=(track,topic,v)=>setTopics(p=>({...p,[track]:{...(p[track]||{}),[topic]:v}}));
+    const markAll=(track,list)=>{setTopics(p=>{const u={...p,[track]:{...(p[track]||{})}};list.forEach(t=>{u[track][t]='mastered'});return u});addXp(20);notify('✅ +20 XP')};
+    const topicRows=useMemo(()=>MUF.flatMap(track=>track.topics.map(topic=>{
+        const st=(topics[track.id]||{})[topic]||'not_started';
+        const topicSessions=sessions.filter(x=>(x.examType||'TYT')===track.exam && x.subject===track.subject && topicMatch(x.topic,topic));
+        const topicMistakes=mistakes.filter(x=>x.subject===track.subject && topicMatch(x.topic,topic));
+        const questions=topicSessions.reduce((a,x)=>a+qInt(x),0);
+        const lastStudy=topicSessions.length?[...topicSessions].sort((a,b)=>new Date(b.date)-new Date(a.date))[0].date:null;
+        const gap=lastStudy?diffYmd(lastStudy,today):999;
+        const risk=(st==='not_started'?20:st==='learning'?14:st==='practicing'?8:0)+topicMistakes.length*12+(gap>14?18:gap>7?12:gap>3?6:0)+(questions===0?8:questions<25?4:0);
+        return{trackId:track.id,exam:track.exam,subject:track.subject,subjectName:track.name,color:track.color,topic,status:st,questions,mistakeCount:topicMistakes.length,lastStudy,gap,risk};
+    })),[topics,sessions,mistakes,today]);
+    const topRisks=useMemo(()=>[...topicRows].sort((a,b)=>b.risk-a.risk).slice(0,5),[topicRows]);
+    const trackStats=useMemo(()=>tracks.map(track=>{const rows=topicRows.filter(r=>r.trackId===track.id);const mastered=rows.filter(r=>r.status==='mastered').length;return{...track,total:rows.length,mastered,risk:rows.length?Math.round(avg(rows.map(r=>r.risk))):0};}),[tracks,topicRows]);
+    const currentTrack=tracks.find(t=>t.id===trackId);
+    const currentRows=useMemo(()=>topicRows.filter(r=>r.trackId===trackId).sort((a,b)=>b.risk-a.risk),[topicRows,trackId]);
+    const row=item=>{const info=TSTATUS[item.status];return(
+        <div key={item.topic} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px 12px',marginBottom:'8px',borderLeft:`3px solid ${item.risk>=40?'#ff5252':item.risk>=22?'#ff9800':'#2a2a3e'}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'flex-start',flexWrap:'wrap'}}>
+                <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'6px',flexWrap:'wrap'}}>
+                        <div style={{width:'8px',height:'8px',borderRadius:'50%',backgroundColor:info.c,flexShrink:0}}/>
+                        <span style={{fontSize:'13px',color:item.status==='mastered'?'#6b7280':'#e5e7eb',textDecoration:item.status==='mastered'?'line-through':'none',fontWeight:'600'}}>{item.topic}</span>
+                        <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'999px',backgroundColor:item.risk>=40?'rgba(255,82,82,.12)':item.risk>=22?'rgba(255,152,0,.12)':'rgba(108,99,255,.12)',color:item.risk>=40?'#ff5252':item.risk>=22?'#ff9800':'#6c63ff'}}>Risk {item.risk}</span>
+                    </div>
+                    <div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#9ca3af',flexWrap:'wrap'}}>
+                        <span>📝 {item.questions} soru</span>
+                        <span>❌ {item.mistakeCount} hata</span>
+                        <span>{item.lastStudy?`📅 ${fd(item.lastStudy)}`:'📅 çalışma yok'}</span>
+                    </div>
+                </div>
+                <select value={item.status} onChange={e=>upd(item.trackId,item.topic,e.target.value)} style={{fontSize:'11px',backgroundColor:'#0a0a0f',border:'1px solid #2a2a3e',borderRadius:'8px',padding:'4px 8px',color:info.c,cursor:'pointer'}}>
+                    {Object.entries(TSTATUS).map(([k,v])=><option key={k} value={k} style={{backgroundColor:'#12121a',color:v.c}}>{v.l}</option>)}
+                </select>
             </div>
-            <select value={st} onChange={e=>upd(s,t,e.target.value)} style={{fontSize:'11px',backgroundColor:'#0a0a0f',border:'1px solid #2a2a3e',borderRadius:'8px',padding:'3px 8px',color:info.c,cursor:'pointer'}}>
-                {Object.entries(TSTATUS).map(([k,v])=><option key={k} value={k} style={{backgroundColor:'#12121a',color:v.c}}>{v.l}</option>)}
-            </select>
         </div>
     )};
     return<div className="space-y-4">
+        <Card title="🗺️ Konu Bazlı Eksik Haritası" subtitle="TYT ve AYT ayrı, tüm ana konularla birlikte risk görünümü">
+            {topRisks.length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Konu, hata ve çalışma verisi geldikçe risk haritası dolacak.</div>:
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>{topRisks.map((r,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px',border:`1px solid ${r.risk>=40?'rgba(255,82,82,.28)':'rgba(255,152,0,.2)'}`}}><div style={{fontSize:'11px',fontWeight:'700',color:r.color}}>{r.exam} · {r.subjectName}</div><div style={{fontSize:'13px',fontWeight:'600',color:'#fff',marginTop:'2px'}}>{r.topic}</div><div style={{display:'flex',gap:'8px',fontSize:'11px',color:'#9ca3af',marginTop:'6px',flexWrap:'wrap'}}><span>❌ {r.mistakeCount}</span><span>📝 {r.questions}</span><span>{r.lastStudy?fd(r.lastStudy):'çalışılmadı'}</span></div></div>)}</div>}
+        </Card>
+
+        <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+            {['TYT','AYT'].map(x=><button key={x} onClick={()=>setExamTab(x)} style={{padding:'6px 14px',borderRadius:'999px',fontSize:'12px',fontWeight:'700',border:'none',cursor:'pointer',backgroundColor:examTab===x?(x==='TYT'?'#6c63ff':'#ff9800'):'#1a1a2e',color:examTab===x?'#fff':'#9ca3af'}}>{x}</button>)}
+        </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'6px'}}>
-            {MUF.map(x=>{const s=mufSt(x.id);const p=s.t>0?Math.round((s.m/s.t)*100):0;return(
-                <button key={x.id} onClick={()=>setTab(x.id)} style={{borderRadius:'14px',padding:'10px',border:`1px solid ${tab===x.id?x.color:'#2a2a3e'}`,backgroundColor:tab===x.id?x.color+'15':'#12121a',textAlign:'left',cursor:'pointer'}}>
+            {trackStats.map(x=>{const p=x.total>0?Math.round((x.mastered/x.total)*100):0;return(
+                <button key={x.id} onClick={()=>setTrackId(x.id)} style={{borderRadius:'14px',padding:'10px',border:`1px solid ${trackId===x.id?x.color:'#2a2a3e'}`,backgroundColor:trackId===x.id?x.color+'15':'#12121a',textAlign:'left',cursor:'pointer'}}>
                     <div style={{fontSize:'12px',fontWeight:'700',color:x.color}}>{x.name}</div>
-                    <div style={{fontSize:'14px',fontWeight:'bold',color:'#fff',margin:'2px 0'}}>{s.m}/{s.t}</div>
+                    <div style={{fontSize:'14px',fontWeight:'bold',color:'#fff',margin:'2px 0'}}>{x.mastered}/{x.total}</div>
+                    <div style={{fontSize:'10px',color:'#9ca3af',marginBottom:'4px'}}>Ort. risk {x.risk}</div>
                     <div style={{backgroundColor:'#0a0a0f',borderRadius:'999px',height:'4px'}}><div style={{width:`${p}%`,height:'4px',borderRadius:'999px',backgroundColor:x.color,transition:'width .7s ease'}}/></div>
                 </button>
             )})}
         </div>
-        {m&&<div className="space-y-3">
-            {m.d1.length>0&&<Card>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
-                    <h3 style={{fontSize:'14px',fontWeight:'600',color:'#fff',margin:0}}>{m.d1l}</h3>
-                    <Btn onClick={()=>markAll(m.id,m.d1)} v="success" s="sm">✓ Tümü</Btn>
-                </div>
-                <PBar value={m.d1.filter(t=>(topics[m.id]||{})[t]==='mastered').length} max={m.d1.length} color={m.color} label={false} size="sm"/>
-                <div style={{marginTop:'12px'}}>{m.d1.map(t=>row(t,m.id))}</div>
-            </Card>}
-            {m.d2&&m.d2.length>0&&m.d2l&&<Card>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
-                    <h3 style={{fontSize:'14px',fontWeight:'600',color:'#fff',margin:0}}>{m.d2l}</h3>
-                    <Btn onClick={()=>markAll(m.id,m.d2)} v="success" s="sm">✓ Tümü</Btn>
-                </div>
-                <div style={{marginTop:'4px'}}>{m.d2.map(t=>row(t,m.id))}</div>
-            </Card>}
-        </div>}
+        {currentTrack&&<Card title={`📘 ${currentTrack.exam} · ${currentTrack.name}`} subtitle="Durum, soru, hata ve son çalışma tarihi birlikte görünür" action={<Btn onClick={()=>markAll(currentTrack.id,currentTrack.topics)} v="success" s="sm">✓ Tümü</Btn>}>
+            <div className="space-y-2">{currentRows.map(row)}</div>
+        </Card>}
     </div>;
 });
 
@@ -1062,24 +1147,28 @@ const App=()=>{
     const[tasks,setTasks]=useState(S.g('tasks',[]));
     const[xp,setXp]=useState(S.g('xp',0));
     const[earnedBadges,setEarnedBadges]=useState(S.g('earnedBadges',[]));
+    const[examDate,setExamDate]=useState(S.g('examDate',getSavedExamDate()));
+    const[commanderName,setCommanderName]=useState(S.g('commanderName','Öğrenci'));
+    const[weeklyPlan,setWeeklyPlan]=useState(S.g('weeklyPlan',WEEKLY_PLAN_DEFAULT()));
     
     // CENTRALIZED flashcards state (SM-2 fix)
     const[flashcards,setFlashcards]=useState(()=>S.g('flashcards',[]).map(c=>({...SM2.init(),...c})));
 
     // Session form — TYT/AYT explicit
-    const[sF,setSF]=useState({subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',correct:'',wrong:''});
+    const[sF,setSF]=useState({subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',correct:'',wrong:''});
     
     // Exam forms
     const TYT_INIT=()=>({turkD:'',turkY:'',matD:'',matY:'',fenD:'',fenY:'',sosD:'',sosY:''});
-    const AYT_INIT=()=>({field:'sayisal',matD:'',matY:'',fizD:'',fizY:'',kimD:'',kimY:'',bioD:'',bioY:'',edbD:'',edbY:'',tar1D:'',tar1Y:'',cog1D:'',cog1Y:''});
+    const AYT_INIT=()=>({field:'sayisal',matD:'',matY:'',fizD:'',fizY:'',kimD:'',kimY:'',bioD:'',bioY:'',edbD:'',edbY:'',tar1D:'',tar1Y:'',cog1D:'',cog1Y:'',tar2D:'',tar2Y:'',cog2D:'',cog2Y:'',felD:'',felY:'',dinD:'',dinY:''});
     const[eTYT,setETYT]=useState(TYT_INIT());
     const[eAYT,setEAYT]=useState(AYT_INIT());
     const[eType,setEType]=useState('TYT'); // which exam modal tab
+    const[eMeta,setEMeta]=useState({title:'',source:''});
 
-    const[mF,setMF]=useState({subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi'});
+    const[mF,setMF]=useState({id:null,subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi',source:'',image:'',resolved:false});
     const[tI,setTI]=useState({text:'',subject:'matematik',priority:'medium'});
 
-    const today=useMemo(()=>td(),[]);
+    const today=td();
 
     // Persist
     useEffect(()=>{S.s('sessions',sessions)},[sessions]);
@@ -1090,6 +1179,9 @@ const App=()=>{
     useEffect(()=>{S.s('tasks',tasks)},[tasks]);
     useEffect(()=>{S.s('xp',xp)},[xp]);
     useEffect(()=>{S.s('earnedBadges',earnedBadges)},[earnedBadges]);
+    useEffect(()=>{S.s('examDate',examDate)},[examDate]);
+    useEffect(()=>{S.s('commanderName',commanderName)},[commanderName]);
+    useEffect(()=>{S.s('weeklyPlan',weeklyPlan)},[weeklyPlan]);
     useEffect(()=>{S.s('flashcards',flashcards)},[flashcards]);
 
     // Auto daily tasks
@@ -1108,7 +1200,7 @@ const App=()=>{
 
     const streak=useMemo(()=>{
         let s=0;const now=new Date();
-        for(let i=0;i<365;i++){const d=new Date(now.getTime()-i*864e5);const ds=d.toISOString().split('T')[0];if(sessions.some(x=>x.date===ds))s++;else if(ds!==today)break;}
+        for(let i=0;i<365;i++){const d=new Date(now.getTime()-i*864e5);const ds=ymd(d);if(sessions.some(x=>x.date===ds))s++;else if(ds!==today)break;}
         return s;
     },[sessions,today]);
 
@@ -1127,6 +1219,7 @@ const App=()=>{
     const addXp=useCallback(a=>setXp(p=>p+a),[]);
     const closeMd=useCallback(()=>setModal({open:false,type:null}),[]);
     const navTo=useCallback((page,sub)=>{setPg(page);if(sub)setToolTab(sub)},[]);
+    const openEditMistake=useCallback(m=>{setMF({id:m.id,subject:m.subject||'matematik',topic:m.topic||'',desc:m.desc||m.description||'',logic:m.logic||m.correctLogic||'',type:m.type||'bilgi',source:m.source||'',image:m.image||'',resolved:!!(m.resolved||m.closed)});setModal({open:true,type:'mistake'})},[]);
 
     // Today stats - TYT and AYT separate
     const tSess=useMemo(()=>sessions.filter(s=>s.date===today),[sessions,today]);
@@ -1141,12 +1234,110 @@ const App=()=>{
     const dueFC=useMemo(()=>flashcards.filter(c=>SM2.isDue(c)).length,[flashcards]);
     const avgRet=useMemo(()=>{const a=flashcards.filter(c=>c.totalReviews>0);return a.length?Math.round(a.reduce((ac,c)=>ac+SM2.getRetention(c),0)/a.length):0},[flashcards]);
 
+    const activeDays7=useMemo(()=>new Set(sessions.filter(s=>{const d=diffYmd(s.date,today);return d>=0&&d<7}).map(s=>s.date)).size,[sessions,today]);
+    const recentExamActivity=useMemo(()=>exams.some(e=>{const d=diffYmd(e.date,today);return d>=0&&d<7}),[exams,today]);
+    const examTrend=useMemo(()=>{
+        const series=[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(e=>((e.tot||0)/(e.examType==='AYT'?80:120))*100);
+        if(series.length<2)return{status:'insufficient',delta:0,recentAvg:avg(series),prevAvg:0,color:'#6b7280',label:'Veri az'};
+        const recent=series.slice(-3),prev=series.slice(-6,-3);
+        const recentAvg=avg(recent),prevAvg=avg(prev.length?prev:series.slice(0,-recent.length));
+        const delta=Math.round((recentAvg-prevAvg)*10)/10;
+        if(delta<=-4)return{status:'slump',delta,recentAvg,prevAvg,color:'#ff5252',label:'Düşüş'};
+        if(delta>=4)return{status:'rise',delta,recentAvg,prevAvg,color:'#00c853',label:'Yükseliş'};
+        return{status:'stable',delta,recentAvg,prevAvg,color:'#ffd600',label:'Denge'};
+    },[exams]);
+
+    const subjectIntel=useMemo(()=>{
+        return SUBS.map(s=>{
+            const sess=sessions.filter(x=>x.subject===s.id);
+            const sess7=sess.filter(x=>{const d=diffYmd(x.date,today);return d>=0&&d<7});
+            const sess14=sess.filter(x=>{const d=diffYmd(x.date,today);return d>=0&&d<14});
+            const mis=mistakes.filter(x=>x.subject===s.id);
+            const mis14=mis.filter(x=>{const d=diffYmd(x.date,today);return d>=0&&d<14});
+            const due=flashcards.filter(c=>c.sub===s.id&&SM2.isDue(c));
+            const tracks=MUF.filter(x=>x.subject===s.id);
+            const allPairs=tracks.flatMap(track=>track.topics.map(topic=>({trackId:track.id,topic})));
+            const mastered=allPairs.filter(x=>(topics[x.trackId]||{})[x.topic]==='mastered').length;
+            const learning=allPairs.filter(x=>(topics[x.trackId]||{})[x.topic]==='learning').length;
+            const practicing=allPairs.filter(x=>(topics[x.trackId]||{})[x.topic]==='practicing').length;
+            const masteryPct=allPairs.length?Math.round((mastered/allPairs.length)*100):null;
+            const lastDate=sess.length?[...sess].sort((a,b)=>new Date(b.date)-new Date(a.date))[0].date:null;
+            const lastGap=lastDate?diffYmd(lastDate,today):99;
+            const q7=sess7.reduce((a,x)=>a+qInt(x),0);
+            const mins7=sess7.reduce((a,x)=>a+dInt(x),0);
+            const mins14=sess14.reduce((a,x)=>a+dInt(x),0);
+            const untouched=!sess.length&&!mis.length&&!due.length&&!learning&&!practicing&&masteryPct===0;
+            const risk=untouched?12:Math.round(
+                Math.min(30,mis14.length*8)+
+                Math.min(18,due.length*4)+
+                (lastGap>5?14:lastGap>2?7:0)+
+                (masteryPct!==null?Math.max(0,Math.round((58-masteryPct)*0.45)):4)+
+                learning*2+practicing
+            );
+            const hiddenScore=untouched?0:Math.round(
+                Math.min(28,mins7/8)+
+                mis14.length*9+
+                due.length*5+
+                (masteryPct!==null?Math.max(0,Math.round((60-masteryPct)*0.35)):8)-
+                Math.min(18,q7/18)
+            );
+            return{...s,sessCount:sess.length,q7,mins7,mins14,misCount:mis.length,mis14:mis14.length,due:due.length,masteryPct,learning,practicing,lastGap,hiddenScore,risk,openTopics:allTopics.length?allTopics.length-mastered:0};
+        }).filter(s=>s.sessCount||s.misCount||s.due||s.masteryPct!==null).sort((a,b)=>b.risk-a.risk);
+    },[sessions,mistakes,flashcards,topics,today]);
+
+    const weekRange=useMemo(()=>weekDates(today),[today]);
+    const weekStart=weekRange[0],weekEnd=weekRange[6];
+    const weekSessions=useMemo(()=>sessions.filter(s=>weekRange.includes(s.date)),[sessions,weekRange]);
+    const weekExams=useMemo(()=>exams.filter(e=>weekRange.includes(e.date)),[exams,weekRange]);
+    const weekQuestions=useMemo(()=>weekSessions.reduce((a,s)=>a+qInt(s),0),[weekSessions]);
+    const weekMinutes=useMemo(()=>weekSessions.reduce((a,s)=>a+dInt(s),0),[weekSessions]);
+    const weeklyDistTotal=useMemo(()=>SUBS.reduce((a,s)=>a+iVal((weeklyPlan.dist||{})[s.id]),0),[weeklyPlan]);
+    const weeklyRows=useMemo(()=>SUBS.map(s=>{
+        const pct=iVal((weeklyPlan.dist||{})[s.id]);
+        const targetQ=Math.round((iVal(weeklyPlan.questions)*pct)/100);
+        const subjectSessions=weekSessions.filter(x=>x.subject===s.id);
+        const actualQ=subjectSessions.reduce((a,x)=>a+qInt(x),0);
+        const actualM=subjectSessions.reduce((a,x)=>a+dInt(x),0);
+        return{...s,pct,targetQ,actualQ,actualM,remaining:Math.max(0,targetQ-actualQ)};
+    }).filter(r=>r.pct>0||r.actualQ>0),[weeklyPlan,weekSessions]);
+
+    const mistakeDNA=useMemo(()=>{
+        const total=mistakes.length;
+        return MTYPES.map(t=>{const count=mistakes.filter(m=>m.type===t.id).length;return{...t,count,pct:total?Math.round((count/total)*100):0}}).sort((a,b)=>b.count-a.count);
+    },[mistakes]);
+
+    const blindSpot=useMemo(()=>{
+        const cand=[...subjectIntel].filter(s=>s.hiddenScore>16||s.mins7>=45).sort((a,b)=>b.hiddenScore-a.hiddenScore)[0];
+        if(!cand)return null;
+        const issue=[];
+        if(cand.mins7>=45)issue.push(`${cand.mins7} dk yatırım`);
+        if(cand.mis14)issue.push(`${cand.mis14} yeni hata`);
+        if(cand.due)issue.push(`${cand.due} due kart`);
+        if(cand.masteryPct!==null)issue.push(`hakimiyet %${cand.masteryPct}`);
+        return{...cand,issue,summary:`${cand.name} alanına zaman gidiyor ama verim aynı hızla yükselmiyor.`,prescription:`${cand.name} için kaynağı ve hata tipini kontrol et; uzun tek blok yerine 2 kısa tur dene.`};
+    },[subjectIntel]);
+
+    const forgetMap=useMemo(()=>subjectIntel.slice(0,6).map(s=>{
+        const risk=s.risk;
+        const zone=risk>=45?{l:'Kritik',c:'#ff5252',bg:'rgba(255,82,82,.1)'}:risk>=28?{l:'Sisli',c:'#ff9800',bg:'rgba(255,152,0,.1)'}:risk>=15?{l:'Dikkat',c:'#ffd600',bg:'rgba(255,214,0,.1)'}:{l:'Stabil',c:'#00c853',bg:'rgba(0,200,83,.1)'};
+        return{...s,zone};
+    }),[subjectIntel]);
+
+    const sourceAnalytics=useMemo(()=>{
+        const map={};
+        const ensure=name=>{const key=srcName(name);if(!map[key])map[key]={name:key,questions:0,minutes:0,sessions:0,examCount:0,netSum:0,bestNet:0,mistakes:0,openMistakes:0};return map[key]};
+        sessions.forEach(s=>{const row=ensure(s.source);row.questions+=qInt(s);row.minutes+=dInt(s);row.sessions+=1;});
+        exams.forEach(e=>{const row=ensure(e.source||e.title);row.examCount+=1;row.netSum+=(e.tot||0);row.bestNet=Math.max(row.bestNet,e.tot||0);});
+        mistakes.forEach(m=>{const row=ensure(m.source);row.mistakes+=1;if(!(m.resolved||m.closed))row.openMistakes+=1;});
+        return Object.values(map).map(r=>({...r,avgNet:r.examCount?Math.round((r.netSum/r.examCount)*10)/10:null,score:r.questions+r.minutes*0.3+r.examCount*25-r.openMistakes*6})).sort((a,b)=>b.score-a.score);
+    },[sessions,exams,mistakes]);
+
     // TYT net preview
     const tytNet=useMemo(()=>{
-        const t=cn(parseInt(eTYT.turkD)||0,parseInt(eTYT.turkY)||0);
-        const m=cn(parseInt(eTYT.matD)||0,parseInt(eTYT.matY)||0);
-        const f=cn(parseInt(eTYT.fenD)||0,parseInt(eTYT.fenY)||0);
-        const s=cn(parseInt(eTYT.sosD)||0,parseInt(eTYT.sosY)||0);
+        const t=sectionNums(eTYT.turkD,eTYT.turkY,40).net;
+        const m=sectionNums(eTYT.matD,eTYT.matY,40).net;
+        const f=sectionNums(eTYT.fenD,eTYT.fenY,20).net;
+        const s=sectionNums(eTYT.sosD,eTYT.sosY,20).net;
         return{t,m,f,s,tot:t+m+f+s};
     },[eTYT]);
 
@@ -1155,50 +1346,96 @@ const App=()=>{
         const field=AYT_FIELDS[eAYT.field];
         if(!field)return{tot:0,secs:[]};
         if(eAYT.field==='sayisal'){
-            const m=cn(parseInt(eAYT.matD)||0,parseInt(eAYT.matY)||0);
-            const f=cn(parseInt(eAYT.fizD)||0,parseInt(eAYT.fizY)||0);
-            const k=cn(parseInt(eAYT.kimD)||0,parseInt(eAYT.kimY)||0);
-            const b=cn(parseInt(eAYT.bioD)||0,parseInt(eAYT.bioY)||0);
+            const m=sectionNums(eAYT.matD,eAYT.matY,40).net;
+            const f=sectionNums(eAYT.fizD,eAYT.fizY,14).net;
+            const k=sectionNums(eAYT.kimD,eAYT.kimY,13).net;
+            const b=sectionNums(eAYT.bioD,eAYT.bioY,13).net;
             return{m,f,k,b,tot:m+f+k+b};
         }
         if(eAYT.field==='ea'){
-            const e=cn(parseInt(eAYT.edbD)||0,parseInt(eAYT.edbY)||0);
-            const m=cn(parseInt(eAYT.matD)||0,parseInt(eAYT.matY)||0);
-            const t=cn(parseInt(eAYT.tar1D)||0,parseInt(eAYT.tar1Y)||0);
-            const c=cn(parseInt(eAYT.cog1D)||0,parseInt(eAYT.cog1Y)||0);
+            const e=sectionNums(eAYT.edbD,eAYT.edbY,24).net;
+            const m=sectionNums(eAYT.matD,eAYT.matY,40).net;
+            const t=sectionNums(eAYT.tar1D,eAYT.tar1Y,10).net;
+            const c=sectionNums(eAYT.cog1D,eAYT.cog1Y,6).net;
             return{e,m,t,c,tot:e+m+t+c};
+        }
+        if(eAYT.field==='sozel'){
+            const e=sectionNums(eAYT.edbD,eAYT.edbY,24).net;
+            const t1=sectionNums(eAYT.tar1D,eAYT.tar1Y,10).net;
+            const c1=sectionNums(eAYT.cog1D,eAYT.cog1Y,6).net;
+            const t2=sectionNums(eAYT.tar2D,eAYT.tar2Y,11).net;
+            const c2=sectionNums(eAYT.cog2D,eAYT.cog2Y,11).net;
+            const fel=sectionNums(eAYT.felD,eAYT.felY,12).net;
+            const din=sectionNums(eAYT.dinD,eAYT.dinY,6).net;
+            return{e,t1,c1,t2,c2,fel,din,tot:e+t1+c1+t2+c2+fel+din};
         }
         return{tot:0};
     },[eAYT]);
 
     // Handlers
+    const validateTYT=()=>[
+        secErr('Türkçe',eTYT.turkD,eTYT.turkY,40),
+        secErr('Matematik',eTYT.matD,eTYT.matY,40),
+        secErr('Fen',eTYT.fenD,eTYT.fenY,20),
+        secErr('Sosyal',eTYT.sosD,eTYT.sosY,20)
+    ].find(Boolean);
+    const validateAYT=()=>{
+        if(eAYT.field==='sayisal')return [
+            secErr('Matematik',eAYT.matD,eAYT.matY,40),
+            secErr('Fizik',eAYT.fizD,eAYT.fizY,14),
+            secErr('Kimya',eAYT.kimD,eAYT.kimY,13),
+            secErr('Biyoloji',eAYT.bioD,eAYT.bioY,13)
+        ].find(Boolean);
+        if(eAYT.field==='ea')return [
+            secErr('Edebiyat',eAYT.edbD,eAYT.edbY,24),
+            secErr('Matematik',eAYT.matD,eAYT.matY,40),
+            secErr('Tarih-1',eAYT.tar1D,eAYT.tar1Y,10),
+            secErr('Coğrafya-1',eAYT.cog1D,eAYT.cog1Y,6)
+        ].find(Boolean);
+        if(eAYT.field==='sozel')return [
+            secErr('Edebiyat',eAYT.edbD,eAYT.edbY,24),
+            secErr('Tarih-1',eAYT.tar1D,eAYT.tar1Y,10),
+            secErr('Coğrafya-1',eAYT.cog1D,eAYT.cog1Y,6),
+            secErr('Tarih-2',eAYT.tar2D,eAYT.tar2Y,11),
+            secErr('Coğrafya-2',eAYT.cog2D,eAYT.cog2Y,11),
+            secErr('Felsefe Grubu',eAYT.felD,eAYT.felY,12),
+            secErr('Din Kültürü',eAYT.dinD,eAYT.dinY,6)
+        ].find(Boolean);
+        return '';
+    };
+
     const addSession=useCallback(()=>{
         if(!sF.topic.trim()||!sF.dur){notify('⚠️ Konu ve süre zorunlu!');return}
-        const q=parseInt(sF.qc)||0,b=q>=80?50:q>=40?20:q>0?5:3;
-        setSessions(p=>[...p,{...sF,id:Date.now(),date:today,duration:sF.dur,questionCount:sF.qc}]);
-        addXp(b);setSF(p=>({...p,topic:'',qc:'',dur:'',correct:'',wrong:''}));
+        const dur=iVal(sF.dur),q=iVal(sF.qc);
+        if(dur<1||dur>600){notify('⚠️ Süre 1-600 dk olmalı');return}
+        if(q>500){notify('⚠️ Soru sayısı çok yüksek');return}
+        const b=q>=80?50:q>=40?20:q>0?5:3;
+        setSessions(p=>[...p,{...sF,source:(sF.source||'').trim(),id:Date.now(),date:today,duration:dur.toString(),questionCount:q.toString(),dur:dur.toString(),qc:q.toString()}]);
+        addXp(b);setSF(p=>({...p,topic:'',qc:'',dur:'',source:'',correct:'',wrong:''}));
         notify(`✅ ${sF.examType} oturumu kaydedildi! +${b} XP`);closeMd();
     },[sF,today,addXp,notify,closeMd]);
 
     const addSessionFromTimer=useCallback(data=>{
-        setSessions(p=>[...p,{...data,id:Date.now(),date:today,questionCount:data.qc}]);
+        setSessions(p=>[...p,{...data,source:data.source||'Zamanlayıcı',id:Date.now(),date:today,questionCount:data.qc}]);
         addXp(15);notify('⏱️ Oturum kaydedildi! +15 XP');
     },[today,addXp,notify]);
 
     const addTYTExam=useCallback(()=>{
-        setExams(p=>[...p,{id:Date.now(),date:today,examType:'TYT',
+        const err=validateTYT();if(err){notify(`⚠️ ${err}`);return}
+        setExams(p=>[...p,{id:Date.now(),date:today,examType:'TYT',title:(eMeta.title||'').trim(),source:(eMeta.source||'').trim(),
             turkD:parseInt(eTYT.turkD)||0,turkY:parseInt(eTYT.turkY)||0,tN:tytNet.t,
             matD:parseInt(eTYT.matD)||0,matY:parseInt(eTYT.matY)||0,mN:tytNet.m,
             fenD:parseInt(eTYT.fenD)||0,fenY:parseInt(eTYT.fenY)||0,fN:tytNet.f,
             sosD:parseInt(eTYT.sosD)||0,sosY:parseInt(eTYT.sosY)||0,sN:tytNet.s,
             tot:tytNet.tot
         }]);
-        setETYT(TYT_INIT());addXp(25);notify('📝 TYT denemesi kaydedildi! +25 XP');closeMd();
-    },[eTYT,tytNet,today,addXp,notify,closeMd]);
+        setETYT(TYT_INIT());setEMeta({title:'',source:''});addXp(25);notify('📝 TYT denemesi kaydedildi! +25 XP');closeMd();
+    },[eTYT,eMeta,tytNet,today,addXp,notify,closeMd]);
 
     const addAYTExam=useCallback(()=>{
         const field=eAYT.field;
-        let entry={id:Date.now(),date:today,examType:'AYT',field};
+        const err=validateAYT();if(err){notify(`⚠️ ${err}`);return}
+        let entry={id:Date.now(),date:today,examType:'AYT',field,title:(eMeta.title||'').trim(),source:(eMeta.source||'').trim()};
         if(field==='sayisal'){
             entry={...entry,matD:parseInt(eAYT.matD)||0,matY:parseInt(eAYT.matY)||0,mN:aytNet.m,
                 fizD:parseInt(eAYT.fizD)||0,fizY:parseInt(eAYT.fizY)||0,fN:aytNet.f,
@@ -1213,15 +1450,30 @@ const App=()=>{
                 cog1D:parseInt(eAYT.cog1D)||0,cog1Y:parseInt(eAYT.cog1Y)||0,cN:aytNet.c,
                 tot:aytNet.tot
             };
+        } else if(field==='sozel'){
+            entry={...entry,edbD:iVal(eAYT.edbD),edbY:iVal(eAYT.edbY),eN:aytNet.e,
+                tar1D:iVal(eAYT.tar1D),tar1Y:iVal(eAYT.tar1Y),t1N:aytNet.t1,
+                cog1D:iVal(eAYT.cog1D),cog1Y:iVal(eAYT.cog1Y),c1N:aytNet.c1,
+                tar2D:iVal(eAYT.tar2D),tar2Y:iVal(eAYT.tar2Y),t2N:aytNet.t2,
+                cog2D:iVal(eAYT.cog2D),cog2Y:iVal(eAYT.cog2Y),c2N:aytNet.c2,
+                felD:iVal(eAYT.felD),felY:iVal(eAYT.felY),felN:aytNet.fel,
+                dinD:iVal(eAYT.dinD),dinY:iVal(eAYT.dinY),dinN:aytNet.din,
+                tot:aytNet.tot
+            };
         }
         setExams(p=>[...p,entry]);
-        setEAYT(AYT_INIT());addXp(30);notify(`📝 AYT ${AYT_FIELDS[field].name} kaydedildi! +30 XP`);closeMd();
-    },[eAYT,aytNet,today,addXp,notify,closeMd]);
+        setEAYT(AYT_INIT());setEMeta({title:'',source:''});addXp(30);notify(`📝 AYT ${AYT_FIELDS[field].name} kaydedildi! +30 XP`);closeMd();
+    },[eAYT,eMeta,aytNet,today,addXp,notify,closeMd]);
 
     const addMistake=useCallback(()=>{
         if(!mF.topic.trim()||!mF.desc.trim()){notify('⚠️ Konu ve hata gerekli!');return}
-        setMistakes(p=>[...p,{...mF,id:Date.now(),date:today,description:mF.desc,correctLogic:mF.logic}]);
-        setMF({subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi'});
+        if(mF.id){
+            setMistakes(p=>p.map(x=>x.id===mF.id?{...x,...mF,source:(mF.source||'').trim(),description:mF.desc,correctLogic:mF.logic,closed:!!mF.resolved}:x));
+            setMF({id:null,subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi',source:'',image:'',resolved:false});
+            notify('✅ Hata kaydı güncellendi!');closeMd();return;
+        }
+        setMistakes(p=>[...p,{...mF,source:(mF.source||'').trim(),id:Date.now(),date:today,description:mF.desc,correctLogic:mF.logic,closed:!!mF.resolved}]);
+        setMF({id:null,subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi',source:'',image:'',resolved:false});
         addXp(5);notify('📕 +5 XP');closeMd();
     },[mF,today,addXp,notify,closeMd]);
 
@@ -1239,8 +1491,8 @@ const App=()=>{
             {/* Header */}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'12px',flexWrap:'wrap'}}>
                 <div>
-                    <h1 style={{fontSize:'20px',fontWeight:'bold',color:'#fff',margin:'0 0 2px'}}>Merhaba, Mehmet Zeki 👋</h1>
-                    <p style={{fontSize:'12px',color:'#6b7280',margin:0}}>YKS'ye <span style={{color:'#ffd600',fontWeight:'bold'}}>{yksGun()}</span> gün kaldı</p>
+                    <h1 style={{fontSize:'20px',fontWeight:'bold',color:'#fff',margin:'0 0 2px'}}>Merhaba, {commanderName} 👋</h1>
+                    <p style={{fontSize:'12px',color:'#6b7280',margin:0}}>YKS'ye <span style={{color:'#ffd600',fontWeight:'bold'}}>{yksGun(examDate)}</span> gün kaldı</p>
                 </div>
                 <div style={{display:'flex',gap:'8px'}}>
                     <div style={{backgroundColor:'#1a1a2e',border:'1px solid #2a2a3e',borderRadius:'12px',padding:'10px 14px'}}>
@@ -1357,8 +1609,8 @@ const App=()=>{
             {/* Last exams */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
                 {lastTYT&&<Card style={{border:'1px solid rgba(108,99,255,.2)'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
-                        <ExamBadge type="TYT"/><span style={{fontSize:'12px',color:'#6b7280'}}>{fd(lastTYT.date)}</span>
+                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px',gap:'8px',flexWrap:'wrap'}}>
+                        <div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}><ExamBadge type="TYT"/>{lastTYT.source&&<span style={{fontSize:'10px',color:'#9ca3af'}}>📚 {lastTYT.source}</span>}</div><span style={{fontSize:'12px',color:'#6b7280'}}>{fd(lastTYT.date)}</span>
                     </div>
                     <div style={{fontSize:'26px',fontWeight:'bold',color:'#6c63ff',textAlign:'center'}}>{lastTYT.tot?.toFixed(1)}<span style={{fontSize:'14px',color:'#6b7280'}}>/120</span></div>
                     <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'4px',marginTop:'8px'}}>
@@ -1369,8 +1621,8 @@ const App=()=>{
                     </div>
                 </Card>}
                 {lastAYT&&<Card style={{border:'1px solid rgba(255,152,0,.2)'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
-                        <div style={{display:'flex',gap:'4px',alignItems:'center'}}><ExamBadge type="AYT"/><span style={{fontSize:'10px',color:'#ff9800'}}>{AYT_FIELDS[lastAYT.field]?.name||'Sayısal'}</span></div>
+                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px',gap:'8px',flexWrap:'wrap'}}>
+                        <div style={{display:'flex',gap:'4px',alignItems:'center',flexWrap:'wrap'}}><ExamBadge type="AYT"/><span style={{fontSize:'10px',color:'#ff9800'}}>{AYT_FIELDS[lastAYT.field]?.name||'Sayısal'}</span>{lastAYT.source&&<span style={{fontSize:'10px',color:'#9ca3af'}}>📚 {lastAYT.source}</span>}</div>
                         <span style={{fontSize:'12px',color:'#6b7280'}}>{fd(lastAYT.date)}</span>
                     </div>
                     <div style={{fontSize:'26px',fontWeight:'bold',color:'#ff9800',textAlign:'center'}}>{lastAYT.tot?.toFixed(1)}<span style={{fontSize:'14px',color:'#6b7280'}}>/80</span></div>
@@ -1402,7 +1654,7 @@ const App=()=>{
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
                 <Card title="⏱️ Zamanlayıcı"><LiveTimer onSave={addSessionFromTimer} notify={notify}/></Card>
-                <Card title="🍅 Pomodoro"><Pomodoro onComplete={m=>addSessionFromTimer({subject:'genel',topic:'Pomodoro',dur:m.toString(),qc:'0',examType:'TYT'})}/></Card>
+                <Card title="🍅 Pomodoro"><Pomodoro onComplete={m=>addSessionFromTimer({subject:'genel',topic:'Pomodoro',dur:m.toString(),qc:'0',examType:'TYT',source:'Pomodoro'})}/></Card>
             </div>
             {/* Today summary */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
@@ -1436,8 +1688,8 @@ const App=()=>{
                                     <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',backgroundColor:sub?.color+'22',color:sub?.color||'#6c63ff'}}>{sub?.name||s.subject}</span>
                                     <span style={{fontSize:'13px',color:'#fff',fontWeight:'500'}}>{s.topic}</span>
                                 </div>
-                                <div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#6b7280'}}>
-                                    <span>📅{fd(s.date)}</span><span>⏱{dInt(s)}dk</span><span>📝{qInt(s)}</span>
+                                <div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#6b7280',flexWrap:'wrap'}}>
+                                    <span>📅{fd(s.date)}</span><span>⏱{dInt(s)}dk</span><span>📝{qInt(s)}</span>{s.source&&<span>📚 {s.source}</span>}
                                 </div>
                             </div>
                             <button onClick={()=>setSessions(p=>p.filter(x=>x.id!==s.id))} style={{color:'#4b5563',background:'none',border:'none',cursor:'pointer',fontSize:'17px'}} onMouseOver={e=>e.target.style.color='#ff5252'} onMouseOut={e=>e.target.style.color='#4b5563'}>×</button>
@@ -1451,6 +1703,8 @@ const App=()=>{
     // ── EXAM PAGE ──────────────────────────────────────────────
     const ExamPg=()=>{
         const[viewType,setViewType]=useState('all');
+        const[cmpA,setCmpA]=useState('');
+        const[cmpB,setCmpB]=useState('');
         const tytExams=exams.filter(e=>!e.examType||e.examType==='TYT');
         const aytExams=exams.filter(e=>e.examType==='AYT');
         const viewExams=viewType==='TYT'?tytExams:viewType==='AYT'?aytExams:exams;
@@ -1458,6 +1712,19 @@ const App=()=>{
         const aytAvg=aytExams.length?(aytExams.reduce((a,e)=>a+(e.tot||0),0)/aytExams.length).toFixed(1):'—';
         const tytBest=tytExams.length?Math.max(...tytExams.map(e=>e.tot||0)).toFixed(1):'—';
         const aytBest=aytExams.length?Math.max(...aytExams.map(e=>e.tot||0)).toFixed(1):'—';
+        const examOptions=[...exams].sort((a,b)=>new Date(b.date)-new Date(a.date));
+        const examById=id=>examOptions.find(x=>String(x.id)===String(id));
+        const examA=examById(cmpA)||examOptions[0]||null;
+        const examB=examById(cmpB)||examOptions[1]||null;
+        const compareRows=useMemo(()=>{
+            if(!examA||!examB)return[];
+            const sameTYT=((!examA.examType||examA.examType==='TYT')&&(!examB.examType||examB.examType==='TYT'));
+            if(sameTYT)return[{l:'Türkçe',a:examA.tN||0,b:examB.tN||0,c:'#29b6f6'},{l:'Matematik',a:examA.mN||0,b:examB.mN||0,c:'#6c63ff'},{l:'Fen',a:examA.fN||0,b:examB.fN||0,c:'#00c853'},{l:'Sosyal',a:examA.sN||0,b:examB.sN||0,c:'#ff9800'}];
+            if(examA.examType==='AYT'&&examB.examType==='AYT'&&examA.field===examB.field&&examA.field==='sayisal')return[{l:'Matematik',a:examA.mN||0,b:examB.mN||0,c:'#6c63ff'},{l:'Fizik',a:examA.fN||0,b:examB.fN||0,c:'#00c853'},{l:'Kimya',a:examA.kN||0,b:examB.kN||0,c:'#ffd600'},{l:'Biyoloji',a:examA.bN||0,b:examB.bN||0,c:'#ff5252'}];
+            if(examA.examType==='AYT'&&examB.examType==='AYT'&&examA.field===examB.field&&examA.field==='ea')return[{l:'Edebiyat',a:examA.eN||0,b:examB.eN||0,c:'#29b6f6'},{l:'Matematik',a:examA.mN||0,b:examB.mN||0,c:'#6c63ff'},{l:'Tarih-1',a:examA.tN||0,b:examB.tN||0,c:'#ff9800'},{l:'Coğrafya-1',a:examA.cN||0,b:examB.cN||0,c:'#e91e63'}];
+            if(examA.examType==='AYT'&&examB.examType==='AYT'&&examA.field===examB.field&&examA.field==='sozel')return[{l:'Edebiyat',a:examA.eN||0,b:examB.eN||0,c:'#29b6f6'},{l:'Tarih-1',a:examA.t1N||0,b:examB.t1N||0,c:'#ff9800'},{l:'Coğ-1',a:examA.c1N||0,b:examB.c1N||0,c:'#e91e63'},{l:'Tarih-2',a:examA.t2N||0,b:examB.t2N||0,c:'#ffb74d'},{l:'Coğ-2',a:examA.c2N||0,b:examB.c2N||0,c:'#ec407a'},{l:'Felsefe',a:examA.felN||0,b:examB.felN||0,c:'#9c27b0'},{l:'Din',a:examA.dinN||0,b:examB.dinN||0,c:'#795548'}];
+            return[];
+        },[cmpA,cmpB,exams]);
         return<div className="space-y-4">
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <h1 style={{fontSize:'20px',fontWeight:'bold',color:'#fff',margin:0}}>📊 Denemeler</h1>
@@ -1488,6 +1755,23 @@ const App=()=>{
                     </div>
                 </Card>
             </div>
+            <Card title="⚖️ Deneme Karşılaştırma Modu" subtitle="İki denemeyi yan yana kıyasla">
+                {examOptions.length<2?<p style={{color:'#6b7280',fontSize:'13px'}}>Karşılaştırma için en az 2 deneme gerekli.</p>:<>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'12px'}}>
+                    <Sel label="1. deneme" value={cmpA||String(examOptions[0]?.id||'')} onChange={setCmpA} options={examOptions.map(e=>({value:String(e.id),label:`${e.examType||'TYT'} · ${e.title||e.source||fdf(e.date)}`}))}/>
+                    <Sel label="2. deneme" value={cmpB||String(examOptions[1]?.id||examOptions[0]?.id||'')} onChange={setCmpB} options={examOptions.map(e=>({value:String(e.id),label:`${e.examType||'TYT'} · ${e.title||e.source||fdf(e.date)}`}))}/>
+                </div>
+                {examA&&examB&&<>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'12px'}}>
+                        {[examA,examB].map((e,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}><div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap',marginBottom:'4px'}}><ExamBadge type={e.examType||'TYT'}/>{e.field&&<span style={{fontSize:'11px',color:'#9ca3af'}}>{AYT_FIELDS[e.field]?.name}</span>}{e.source&&<span style={{fontSize:'11px',color:'#9ca3af'}}>📚 {e.source}</span>}</div><div style={{fontSize:'12px',color:'#fff',fontWeight:'600'}}>{e.title||'Deneme'}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{fdf(e.date)}</div><div style={{fontSize:'24px',fontWeight:'700',color:(e.examType==='AYT'?'#ff9800':'#6c63ff'),marginTop:'8px'}}>{(e.tot||0).toFixed(1)}</div></div>)}
+                    </div>
+                    <div style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'12px',marginBottom:'10px'}}>
+                        <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px'}}><span style={{color:'#9ca3af'}}>Toplam fark</span><span style={{color:((examB.tot||0)-(examA.tot||0))>=0?'#00c853':'#ff5252',fontWeight:'700'}}>{((examB.tot||0)-(examA.tot||0))>=0?'+':''}{(((examB.tot||0)-(examA.tot||0))).toFixed(1)}</span></div>
+                    </div>
+                    {compareRows.length>0?<div className="space-y-2">{compareRows.map(r=>{const diff=(r.b-r.a);return<div key={r.l} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'8px 10px'}}><div style={{display:'grid',gridTemplateColumns:'1fr auto auto auto',gap:'8px',alignItems:'center',fontSize:'12px'}}><span style={{color:r.c,fontWeight:'600'}}>{r.l}</span><span style={{color:'#9ca3af'}}>{r.a.toFixed(1)}</span><span style={{color:'#9ca3af'}}>{r.b.toFixed(1)}</span><span style={{color:diff>=0?'#00c853':'#ff5252',fontWeight:'700'}}>{diff>=0?'+':''}{diff.toFixed(1)}</span></div></div>})}</div>:<div style={{fontSize:'12px',color:'#6b7280'}}>Farklı türde/alanlarda denemeler seçildiği için sadece toplam net karşılaştırılıyor.</div>}
+                </>}
+                </>}
+            </Card>
             <ExamChart exams={exams}/>
             <Card title="📋 Tüm Denemeler" action={
                 <div style={{display:'flex',gap:'4px'}}>
@@ -1502,6 +1786,8 @@ const App=()=>{
                                 <div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}>
                                     <ExamBadge type={e.examType||'TYT'}/>
                                     {e.field&&<span style={{fontSize:'11px',color:'#9ca3af'}}>{AYT_FIELDS[e.field]?.name}</span>}
+                                    {e.title&&<span style={{fontSize:'11px',color:'#e5e7eb'}}>{e.title}</span>}
+                                    {e.source&&<span style={{fontSize:'11px',color:'#9ca3af'}}>📚 {e.source}</span>}
                                     <span style={{fontSize:'12px',color:'#6b7280'}}>{fdf(e.date)}</span>
                                 </div>
                                 <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
@@ -1537,64 +1823,104 @@ const App=()=>{
             </Card>
         </div>;
     };
-
     // ── MISTAKES PAGE ──────────────────────────────────────────
     const MistPg=()=>{
         const[rv,setRv]=useState(false);const[cur,setCur]=useState(null);const[sa,setSa]=useState(false);const[fil,setFil]=useState('all');
-        const filtered=useMemo(()=>fil==='all'?mistakes:mistakes.filter(m=>m.subject===fil),[fil,mistakes]);
-        const startRev=()=>{if(!filtered.length){notify('⚠️ Hata yok!');return}setCur(filtered[Math.floor(Math.random()*filtered.length)]);setSa(false);setRv(true)};
+        const[statusFil,setStatusFil]=useState('open');const[q,setQ]=useState('');const[srcFil,setSrcFil]=useState('all');const[imgPv,setImgPv]=useState('');
+        const sourceOpts=useMemo(()=>['all',...Array.from(new Set(mistakes.map(m=>srcName(m.source))))],[mistakes]);
+        const filtered=useMemo(()=>mistakes.filter(m=>{
+            if(fil!=='all'&&m.subject!==fil)return false;
+            if(statusFil==='open'&&(m.resolved||m.closed))return false;
+            if(statusFil==='closed'&&!(m.resolved||m.closed))return false;
+            if(srcFil!=='all'&&srcName(m.source)!==srcFil)return false;
+            if(q.trim()){
+                const hay=[m.topic,m.desc||m.description,m.logic||m.correctLogic,m.source].map(x=>norm(x)).join(' ');
+                if(!hay.includes(norm(q)))return false;
+            }
+            return true;
+        }),[mistakes,fil,statusFil,srcFil,q]);
+        const startRev=()=>{const pool=(filtered.filter(m=>!(m.resolved||m.closed)).length?filtered.filter(m=>!(m.resolved||m.closed)):filtered);if(!pool.length){notify('⚠️ Hata yok!');return}setCur(pool[Math.floor(Math.random()*pool.length)]);setSa(false);setRv(true)};
+        const toggleResolved=id=>{setMistakes(p=>p.map(m=>m.id===id?{...m,resolved:!(m.resolved||m.closed),closed:!(m.resolved||m.closed)}:m));if(cur&&cur.id===id)setCur(c=>({...c,resolved:!(c.resolved||c.closed),closed:!(c.resolved||c.closed)}));};
         return<div className="space-y-4">
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
                 <h1 style={{fontSize:'20px',fontWeight:'bold',color:'#fff',margin:0}}>📕 Kara Defter</h1>
                 <div style={{display:'flex',gap:'8px'}}>
                     <Btn onClick={startRev} v="success" s="sm">🔄 Tekrar</Btn>
-                    <Btn onClick={()=>setModal({open:true,type:'mistake'})} s="sm">+ Ekle</Btn>
+                    <Btn onClick={()=>{setMF({id:null,subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi',source:'',image:'',resolved:false});setModal({open:true,type:'mistake'})}} s="sm">+ Ekle</Btn>
                 </div>
             </div>
-            {rv&&cur&&<div style={{backgroundColor:'#12121a',border:'1px solid rgba(108,99,255,.4)',borderRadius:'16px',padding:'20px',textAlign:'center'}} className="glow">
+            {rv&&cur&&<div style={{backgroundColor:'#12121a',border:'1px solid rgba(108,99,255,.4)',borderRadius:'16px',padding:'20px'}} className="glow">
                 {(()=>{const sub=SUBS.find(s=>s.id===cur.subject);const mt=MTYPES.find(t=>t.id===cur.type);return(<>
-                    <div style={{display:'flex',justifyContent:'center',gap:'8px',marginBottom:'10px'}}>
-                        <span style={{fontSize:'12px',padding:'3px 10px',borderRadius:'999px',backgroundColor:sub?.color+'22',color:sub?.color}}>{sub?.name}</span>
-                        {mt&&<span style={{fontSize:'12px',padding:'3px 10px',borderRadius:'999px',backgroundColor:mt.color+'22',color:mt.color}}>{mt.name}</span>}
+                    <div style={{display:'flex',justifyContent:'space-between',gap:'10px',alignItems:'flex-start',flexWrap:'wrap',marginBottom:'10px'}}>
+                        <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                            <span style={{fontSize:'12px',padding:'3px 10px',borderRadius:'999px',backgroundColor:sub?.color+'22',color:sub?.color}}>{sub?.name}</span>
+                            {mt&&<span style={{fontSize:'12px',padding:'3px 10px',borderRadius:'999px',backgroundColor:mt.color+'22',color:mt.color}}>{mt.name}</span>}
+                            <span style={{fontSize:'12px',padding:'3px 10px',borderRadius:'999px',backgroundColor:(cur.resolved||cur.closed)?'rgba(0,200,83,.12)':'rgba(255,152,0,.12)',color:(cur.resolved||cur.closed)?'#00c853':'#ff9800'}}>{(cur.resolved||cur.closed)?'Kapandı':'Açık'}</span>
+                            {cur.source&&<span style={{fontSize:'12px',padding:'3px 10px',borderRadius:'999px',backgroundColor:'#1a1a2e',color:'#9ca3af'}}>📚 {cur.source}</span>}
+                        </div>
+                        <div style={{fontSize:'11px',color:'#6b7280'}}>{fdf(cur.date)}</div>
                     </div>
                     <h3 style={{fontSize:'18px',fontWeight:'bold',color:'#fff',marginBottom:'10px'}}>{cur.topic}</h3>
+                    {!!cur.image&&<img src={cur.image} alt="Hata görseli" onClick={()=>setImgPv(cur.image)} style={{width:'100%',maxHeight:'220px',objectFit:'contain',borderRadius:'12px',border:'1px solid #2a2a3e',marginBottom:'10px',backgroundColor:'#0a0a0f',cursor:'zoom-in'}}/>}
                     <div style={{backgroundColor:'rgba(255,82,82,.1)',border:'1px solid rgba(255,82,82,.2)',borderRadius:'10px',padding:'12px',marginBottom:'10px'}}>
                         <p style={{fontSize:'14px',color:'#ff5252',margin:0}}>❌ {cur.desc||cur.description}</p>
                     </div>
                     {sa&&<div style={{backgroundColor:'rgba(0,200,83,.1)',border:'1px solid rgba(0,200,83,.2)',borderRadius:'10px',padding:'12px',marginBottom:'10px'}}>
                         <p style={{fontSize:'14px',color:'#00c853',margin:0}}>✅ {cur.logic||cur.correctLogic||'—'}</p>
                     </div>}
-                    <div style={{display:'flex',justifyContent:'center',gap:'8px'}}>
+                    <div style={{display:'flex',justifyContent:'center',gap:'8px',flexWrap:'wrap'}}>
                         {!sa&&<Btn onClick={()=>setSa(true)}>💡 Cevap</Btn>}
+                        <Btn onClick={()=>toggleResolved(cur.id)} v={(cur.resolved||cur.closed)?'ghost':'success'} s="sm">{(cur.resolved||cur.closed)?'↺ Açık yap':'✓ Kapandı'}</Btn>
+                        <Btn onClick={()=>openEditMistake(cur)} v="ghost" s="sm">Düzenle</Btn>
                         <Btn onClick={startRev} v="ghost">→ Sonraki</Btn>
                         <Btn onClick={()=>setRv(false)} v="danger" s="sm">× Kapat</Btn>
                     </div>
                 </>)})()}
             </div>}
-            <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
-                <button onClick={()=>setFil('all')} style={{padding:'4px 10px',borderRadius:'999px',fontSize:'11px',fontWeight:'600',border:'none',cursor:'pointer',backgroundColor:fil==='all'?'#6c63ff':'#1a1a2e',color:fil==='all'?'#fff':'#9ca3af'}}>Tümü({mistakes.length})</button>
-                {SUBS.map(s=>{const c=mistakes.filter(m=>m.subject===s.id).length;if(!c)return null;return<button key={s.id} onClick={()=>setFil(s.id)} style={{padding:'4px 10px',borderRadius:'999px',fontSize:'11px',fontWeight:'600',border:'none',cursor:'pointer',backgroundColor:fil===s.id?s.color:'#1a1a2e',color:fil===s.id?'#fff':'#9ca3af'}}>{s.name}({c})</button>})}
-            </div>
+            <Card>
+                <div style={{display:'grid',gridTemplateColumns:'1.2fr .9fr .9fr',gap:'8px'}}>
+                    <Inp value={q} onChange={setQ} placeholder="Ara: konu, kaynak, not..."/>
+                    <Sel value={statusFil} onChange={setStatusFil} options={[{value:'open',label:'Açıklar'},{value:'closed',label:'Kapananlar'},{value:'all',label:'Hepsi'}]}/>
+                    <Sel value={srcFil} onChange={setSrcFil} options={sourceOpts.map(v=>({value:v,label:v==='all'?'Tüm Kaynaklar':v}))}/>
+                </div>
+                <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginTop:'10px'}}>
+                    <button onClick={()=>setFil('all')} style={{padding:'4px 10px',borderRadius:'999px',fontSize:'11px',fontWeight:'600',border:'none',cursor:'pointer',backgroundColor:fil==='all'?'#6c63ff':'#1a1a2e',color:fil==='all'?'#fff':'#9ca3af'}}>Tümü({mistakes.length})</button>
+                    {SUBS.map(s=>{const c=mistakes.filter(m=>m.subject===s.id).length;if(!c)return null;return<button key={s.id} onClick={()=>setFil(s.id)} style={{padding:'4px 10px',borderRadius:'999px',fontSize:'11px',fontWeight:'600',border:'none',cursor:'pointer',backgroundColor:fil===s.id?s.color:'#1a1a2e',color:fil===s.id?'#fff':'#9ca3af'}}>{s.name}({c})</button>})}
+                </div>
+            </Card>
             <div className="space-y-2">
-                {filtered.length===0?<Card><p style={{color:'#6b7280',textAlign:'center',padding:'20px 0'}}>Hata yok!</p></Card>:
-                [...filtered].sort((a,b)=>b.id-a.id).map(m=>{const sub=SUBS.find(s=>s.id===m.subject);const mt=MTYPES.find(t=>t.id===m.type);return(
-                    <Card key={m.id}>
-                        <div style={{display:'flex',justifyContent:'space-between'}}>
-                            <div style={{flex:1}}>
+                {filtered.length===0?<Card><p style={{color:'#6b7280',textAlign:'center',padding:'20px 0'}}>Filtreye uygun hata yok.</p></Card>:
+                [...filtered].sort((a,b)=>b.id-a.id).map(m=>{const sub=SUBS.find(s=>s.id===m.subject);const mt=MTYPES.find(t=>t.id===m.type);const closed=m.resolved||m.closed;return(
+                    <Card key={m.id} style={{borderLeft:`3px solid ${closed?'#00c853':'#ff5252'}`}}>
+                        <div style={{display:'flex',justifyContent:'space-between',gap:'10px'}}>
+                            <div style={{flex:1,minWidth:0}}>
                                 <div style={{display:'flex',gap:'6px',marginBottom:'6px',flexWrap:'wrap',alignItems:'center'}}>
                                     <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',backgroundColor:sub?.color+'22',color:sub?.color,fontWeight:'600'}}>{sub?.name}</span>
                                     <span style={{fontSize:'13px',fontWeight:'600',color:'#fff'}}>{m.topic}</span>
                                     {mt&&<span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',backgroundColor:mt.color+'22',color:mt.color}}>{mt.name}</span>}
+                                    <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',backgroundColor:closed?'rgba(0,200,83,.12)':'rgba(255,152,0,.12)',color:closed?'#00c853':'#ff9800'}}>{closed?'Kapandı':'Açık'}</span>
+                                    {m.source&&<span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',backgroundColor:'#1a1a2e',color:'#9ca3af'}}>📚 {m.source}</span>}
                                 </div>
                                 <p style={{fontSize:'12px',color:'#ff5252',margin:'0 0 4px'}}>❌ {m.desc||m.description}</p>
                                 {(m.logic||m.correctLogic)&&<p style={{fontSize:'12px',color:'#00c853',margin:'0 0 4px'}}>✅ {m.logic||m.correctLogic}</p>}
+                                {!!m.image&&<img src={m.image} alt="Hata görseli" onClick={()=>setImgPv(m.image)} style={{width:'100%',maxWidth:'220px',maxHeight:'120px',objectFit:'cover',borderRadius:'10px',border:'1px solid #2a2a3e',margin:'6px 0',cursor:'zoom-in'}}/>}
                                 <p style={{fontSize:'11px',color:'#4b5563',margin:0}}>{fdf(m.date)}</p>
                             </div>
-                            <button onClick={()=>setMistakes(p=>p.filter(x=>x.id!==m.id))} style={{color:'#4b5563',background:'none',border:'none',cursor:'pointer',fontSize:'18px',marginLeft:'8px',flexShrink:0}} onMouseOver={e=>e.target.style.color='#ff5252'} onMouseOut={e=>e.target.style.color='#4b5563'}>×</button>
+                            <div style={{display:'flex',flexDirection:'column',gap:'6px',alignItems:'flex-end'}}>
+                                <Btn onClick={()=>toggleResolved(m.id)} v={closed?'ghost':'success'} s="sm">{closed?'Aç':'Kapat'}</Btn>
+                                <Btn onClick={()=>openEditMistake(m)} v="ghost" s="sm">Düzenle</Btn>
+                                <button onClick={()=>setMistakes(p=>p.filter(x=>x.id!==m.id))} style={{color:'#4b5563',background:'none',border:'none',cursor:'pointer',fontSize:'18px',marginLeft:'8px',flexShrink:0}} onMouseOver={e=>e.target.style.color='#ff5252'} onMouseOut={e=>e.target.style.color='#4b5563'}>×</button>
+                            </div>
                         </div>
                     </Card>
                 )})}
             </div>
+            {imgPv&&<div onClick={()=>setImgPv('')} style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,.92)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:80,padding:'16px'}}>
+                <div style={{position:'relative',maxWidth:'100%',maxHeight:'100%'}} onClick={e=>e.stopPropagation()}>
+                    <button onClick={()=>setImgPv('')} style={{position:'absolute',top:'-12px',right:'-12px',width:'36px',height:'36px',borderRadius:'50%',border:'none',backgroundColor:'#1a1a2e',color:'#fff',cursor:'pointer',fontSize:'20px'}}>×</button>
+                    <img src={imgPv} alt="Büyük önizleme" style={{maxWidth:'92vw',maxHeight:'88vh',objectFit:'contain',borderRadius:'14px',border:'1px solid #2a2a3e',backgroundColor:'#0a0a0f'}}/>
+                </div>
+            </div>}
         </div>;
     };
 
@@ -1628,38 +1954,98 @@ const App=()=>{
             </div>;
         };
         const AnalysisPage=()=>{
+            const examRef=useRef(null),examCI=useRef(null),sourceRef=useRef(null),sourceCI=useRef(null);
             const subStats=useMemo(()=>SUBS.map(s=>{
                 const tytSess=sessions.filter(x=>x.subject===s.id&&isTYT(x));
                 const aytSess=sessions.filter(x=>x.subject===s.id&&isAYT(x));
                 return{...s,tytQ:tytSess.reduce((a,x)=>a+qInt(x),0),aytQ:aytSess.reduce((a,x)=>a+qInt(x),0),totalMins:sessions.filter(x=>x.subject===s.id).reduce((a,x)=>a+dInt(x),0),mistakes:mistakes.filter(x=>x.subject===s.id).length};
-            }),[]);
+            }),[sessions,mistakes]);
+            const recentSeries=useMemo(()=>{
+                const tyt=[...exams].filter(e=>!e.examType||e.examType==='TYT').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(-10).map(e=>({label:fd(e.date),value:e.tot||0}));
+                const ayt=[...exams].filter(e=>e.examType==='AYT').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(-10).map(e=>({label:fd(e.date),value:e.tot||0}));
+                return{tyt,ayt};
+            },[exams]);
+            const examLabels=useMemo(()=>{const max=Math.max(recentSeries.tyt.length,recentSeries.ayt.length);return Array.from({length:max},(_,i)=>recentSeries.tyt[i]?.label||recentSeries.ayt[i]?.label||String(i+1))},[recentSeries]);
+            const tytSectionTrend=useMemo(()=>{
+                const list=[...exams].filter(e=>!e.examType||e.examType==='TYT').sort((a,b)=>new Date(a.date)-new Date(b.date));
+                const mk=(key,label,color)=>{const vals=list.map(e=>e[key]||0);const recent=avg(vals.slice(-3));const prev=avg(vals.slice(-6,-3).length?vals.slice(-6,-3):vals.slice(0,-3));return{label,color,recent,prev,delta:Math.round((recent-prev)*10)/10}};
+                return [mk('tN','Türkçe','#29b6f6'),mk('mN','Matematik','#6c63ff'),mk('fN','Fen','#00c853'),mk('sN','Sosyal','#ff9800')];
+            },[exams]);
+            const aytSectionTrend=useMemo(()=>{
+                const list=[...exams].filter(e=>e.examType==='AYT').sort((a,b)=>new Date(a.date)-new Date(b.date));
+                const mk=(getVals,label,color)=>{const vals=list.map(getVals).filter(v=>v!==null&&v!==undefined);const recent=avg(vals.slice(-3));const prev=avg(vals.slice(-6,-3).length?vals.slice(-6,-3):vals.slice(0,-3));return{label,color,recent,prev,delta:Math.round((recent-prev)*10)/10}};
+                return [mk(e=>e.mN,'Matematik','#6c63ff'),mk(e=>e.fN,'Fizik','#00c853'),mk(e=>e.kN,'Kimya','#ffd600'),mk(e=>e.bN,'Biyoloji','#ff5252'),mk(e=>e.eN,'Edebiyat','#29b6f6'),mk(e=>e.tN||e.t1N,'Tarih','#ff9800'),mk(e=>e.cN||e.c1N,'Coğrafya','#e91e63')].filter(x=>!Number.isNaN(x.recent)||!Number.isNaN(x.prev));
+            },[exams]);
+            const wrongAreas=useMemo(()=>{
+                const rows={};
+                const add=(label,val)=>{rows[label]=(rows[label]||0)+(iVal(val));};
+                exams.forEach(e=>{
+                    if(!e.examType||e.examType==='TYT'){add('TYT Türkçe',e.turkY);add('TYT Matematik',e.matY);add('TYT Fen',e.fenY);add('TYT Sosyal',e.sosY);}
+                    if(e.examType==='AYT'){
+                        add('AYT Matematik',e.matY);add('AYT Fizik',e.fizY);add('AYT Kimya',e.kimY);add('AYT Biyoloji',e.bioY);
+                        add('AYT Edebiyat',e.edbY);add('AYT Tarih-1',e.tar1Y);add('AYT Coğ-1',e.cog1Y);add('AYT Tarih-2',e.tar2Y);add('AYT Coğ-2',e.cog2Y);add('AYT Felsefe',e.felY);add('AYT Din',e.dinY);
+                    }
+                });
+                return Object.entries(rows).map(([label,value])=>({label,value})).filter(x=>x.value>0).sort((a,b)=>b.value-a.value).slice(0,8);
+            },[exams]);
+
+            useEffect(()=>{
+                if(!examRef.current)return;
+                if(examCI.current){examCI.current.destroy();examCI.current=null}
+                examCI.current=new Chart(examRef.current,{type:'line',data:{labels:examLabels,datasets:[{label:'TYT',data:recentSeries.tyt.map(x=>x.value),borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.15)',fill:false,tension:.35},{label:'AYT',data:recentSeries.ayt.map(x=>x.value),borderColor:'#ff9800',backgroundColor:'rgba(255,152,0,.15)',fill:false,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{y:{ticks:{color:'#6b7280'},grid:{color:'#1a1a2e'}},x:{ticks:{color:'#6b7280'},grid:{display:false}}}}});
+                return()=>{if(examCI.current){examCI.current.destroy();examCI.current=null}};
+            },[recentSeries,examLabels]);
+            useEffect(()=>{
+                if(!sourceRef.current)return;
+                if(sourceCI.current){sourceCI.current.destroy();sourceCI.current=null}
+                const top=sourceAnalytics.slice(0,6);
+                sourceCI.current=new Chart(sourceRef.current,{type:'bar',data:{labels:top.map(x=>x.name),datasets:[{label:'Soru',data:top.map(x=>x.questions),backgroundColor:'#6c63ff88',borderRadius:6},{label:'Dakika',data:top.map(x=>x.minutes),backgroundColor:'#00c85355',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{y:{ticks:{color:'#6b7280'},grid:{color:'#1a1a2e'}},x:{ticks:{color:'#6b7280',font:{size:9}},grid:{display:false}}}}});
+                return()=>{if(sourceCI.current){sourceCI.current.destroy();sourceCI.current=null}};
+            },[sourceAnalytics]);
+
             return<div className="space-y-4">
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-                    {[{v:sessions.reduce((a,s)=>a+qInt(s),0).toLocaleString(),l:'Toplam Soru',c:'#6c63ff',i:'📝'},{v:`${Math.round(sessions.reduce((a,s)=>a+dInt(s),0)/60)}s`,l:'Toplam Süre',c:'#00c853',i:'⏱️'},{v:exams.filter(e=>isTYT(e)).length,l:'TYT Deneme',c:'#6c63ff',i:'📊'},{v:exams.filter(e=>isAYT(e)).length,l:'AYT Deneme',c:'#ff9800',i:'📊'}
-                    ].map((x,i)=><Card key={i} style={{padding:'12px'}}>
-                        <div style={{fontSize:'18px',marginBottom:'2px'}}>{x.i}</div>
-                        <div style={{fontSize:'18px',fontWeight:'bold',color:x.c}}>{x.v}</div>
-                        <div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div>
-                    </Card>)}
+                    {[{v:sessions.reduce((a,s)=>a+qInt(s),0).toLocaleString(),l:'Toplam Soru',c:'#6c63ff',i:'📝'},{v:`${Math.round(sessions.reduce((a,s)=>a+dInt(s),0)/60)}s`,l:'Toplam Süre',c:'#00c853',i:'⏱️'},{v:exams.filter(e=>isTYT(e)).length,l:'TYT Deneme',c:'#6c63ff',i:'📊'},{v:exams.filter(e=>isAYT(e)).length,l:'AYT Deneme',c:'#ff9800',i:'📊'}].map((x,i)=><Card key={i} style={{padding:'12px'}}><div style={{fontSize:'18px',marginBottom:'2px'}}>{x.i}</div><div style={{fontSize:'18px',fontWeight:'bold',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></Card>)}
                 </div>
-                <Card title="📋 Ders İstatistikleri">
-                    <div className="space-y-2">
-                        {subStats.filter(s=>s.tytQ>0||s.aytQ>0).map(s=>(
-                            <div key={s.id} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}>
-                                <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px',flexWrap:'wrap',gap:'4px'}}>
-                                    <span style={{fontSize:'13px',fontWeight:'600',color:s.color}}>{s.icon} {s.name}</span>
-                                    <div style={{display:'flex',gap:'8px',fontSize:'11px'}}>
-                                        {s.tytQ>0&&<span style={{color:'#6c63ff'}}>TYT:{s.tytQ}</span>}
-                                        {s.aytQ>0&&<span style={{color:'#ff9800'}}>AYT:{s.aytQ}</span>}
-                                        <span style={{color:'#9ca3af'}}>⏱{Math.round(s.totalMins/60)}s</span>
-                                        {s.mistakes>0&&<span style={{color:'#ff5252'}}>❌{s.mistakes}</span>}
-                                    </div>
-                                </div>
-                                {s.tytQ>0&&<div style={{marginBottom:'4px'}}><div style={{fontSize:'10px',color:'#6c63ff',marginBottom:'2px'}}>TYT ({s.tyt} soru/deneme)</div><PBar value={s.tytQ} max={Math.max(...subStats.map(x=>x.tytQ),1)} color="#6c63ff" label={false} size="sm"/></div>}
-                                {s.aytQ>0&&<div><div style={{fontSize:'10px',color:'#ff9800',marginBottom:'2px'}}>AYT ({s.ayt||'—'} soru/deneme)</div><PBar value={s.aytQ} max={Math.max(...subStats.map(x=>x.aytQ),1)} color="#ff9800" label={false} size="sm"/></div>}
-                            </div>
-                        ))}
+
+                <Card title="🧪 Deneme Analiz Merkezi" subtitle="Son 10 deneme, ders bazlı değişim ve yanlış yoğunluğu">
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'12px'}}>
+                        {[{l:'TYT Ort.',v:exams.filter(e=>!e.examType||e.examType==='TYT').length?(exams.filter(e=>!e.examType||e.examType==='TYT').reduce((a,e)=>a+(e.tot||0),0)/exams.filter(e=>!e.examType||e.examType==='TYT').length).toFixed(1):'—',c:'#6c63ff'},{l:'TYT En İyi',v:exams.filter(e=>!e.examType||e.examType==='TYT').length?Math.max(...exams.filter(e=>!e.examType||e.examType==='TYT').map(e=>e.tot||0)).toFixed(1):'—',c:'#00c853'},{l:'AYT Ort.',v:exams.filter(e=>e.examType==='AYT').length?(exams.filter(e=>e.examType==='AYT').reduce((a,e)=>a+(e.tot||0),0)/exams.filter(e=>e.examType==='AYT').length).toFixed(1):'—',c:'#ff9800'},{l:'Son Trend',v:`${examTrend.delta>0?'+':''}${examTrend.delta}`,c:examTrend.color}].map((x,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'16px',fontWeight:'bold',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></div>)}
                     </div>
+                    <div style={{height:'220px',marginBottom:'12px'}}><canvas ref={examRef}/></div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                        <div>
+                            <div style={{fontSize:'12px',fontWeight:'700',color:'#9ca3af',marginBottom:'8px'}}>TYT Ders Bazlı Değişim</div>
+                            <div className="space-y-2">{tytSectionTrend.map(x=><div key={x.label} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'8px 10px'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}><span style={{color:x.color}}>{x.label}</span><span style={{color:(x.delta||0)>=0?'#00c853':'#ff5252'}}>{(x.delta||0)>=0?'+':''}{(x.delta||0).toFixed(1)}</span></div><div style={{fontSize:'10px',color:'#6b7280',marginTop:'3px'}}>Son 3 ort.: {(x.recent||0).toFixed(1)} · Öncesi: {(x.prev||0).toFixed(1)}</div></div>)}</div>
+                        </div>
+                        <div>
+                            <div style={{fontSize:'12px',fontWeight:'700',color:'#9ca3af',marginBottom:'8px'}}>En Sık Yanlış Çıkan Alanlar</div>
+                            <div className="space-y-2">{wrongAreas.length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Yanlış verisi biriktikçe burada görünecek.</div>:wrongAreas.map(x=><div key={x.label} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'8px 10px'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}><span style={{color:'#e5e7eb'}}>{x.label}</span><span style={{color:'#ff5252'}}>{x.value} yanlış</span></div></div>)}</div>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card title="📚 Soru Kaynağı Takibi" subtitle="Hangi kaynağa ne kadar zaman gitti, hangisi verimli oldu?">
+                    <div style={{height:'220px',marginBottom:'12px'}}><canvas ref={sourceRef}/></div>
+                    {sourceAnalytics.length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Kaynak adı girmeye başladığında burada kaynak bazlı verim raporu çıkacak.</div>:
+                    <div className="space-y-2">{sourceAnalytics.slice(0,8).map(src=><div key={src.name} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px 12px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',flexWrap:'wrap',alignItems:'center'}}><div style={{fontSize:'13px',fontWeight:'700',color:'#fff'}}>{src.name}</div><div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#9ca3af',flexWrap:'wrap'}}><span>📝 {src.questions}</span><span>⏱ {src.minutes} dk</span><span>📊 {src.examCount} deneme</span>{src.avgNet!==null&&<span>Ort. net {src.avgNet}</span>}<span style={{color:src.openMistakes?'#ff5252':'#00c853'}}>❌ {src.openMistakes}/{src.mistakes}</span></div></div></div>)}</div>}
+                </Card>
+
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                    <Card title="🧬 Hata DNA'sı" subtitle={mistakes.length?`${mistakes.length} toplam hata kaydı`:'Veri geldikçe oluşur'}>
+                        {mistakeDNA.filter(x=>x.count>0).length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Hata girdikçe hangi tipte tökezlediğini burada göreceksin.</div>:
+                        <div className="space-y-2">{mistakeDNA.filter(x=>x.count>0).map(x=><div key={x.id}><div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',marginBottom:'4px'}}><span style={{color:x.color}}>{x.name}</span><span style={{color:'#9ca3af'}}>{x.count} · %{x.pct}</span></div><PBar value={x.pct} max={100} color={x.color} label={false} size="sm"/></div>)}</div>}
+                    </Card>
+                    <Card title="🕳️ Kör Nokta Motoru" subtitle={blindSpot?`Skor ${blindSpot.hiddenScore}`:'Veri bekleniyor'}>
+                        {blindSpot?<><div style={{fontSize:'16px',fontWeight:'700',color:blindSpot.color}}>{blindSpot.icon} {blindSpot.name}</div><div style={{fontSize:'12px',color:'#e5e7eb',marginTop:'6px'}}>{blindSpot.summary}</div><div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginTop:'8px'}}>{blindSpot.issue.map((x,i)=><span key={i} style={{fontSize:'10px',padding:'4px 8px',borderRadius:'999px',backgroundColor:'#1a1a2e',color:'#9ca3af'}}>{x}</span>)}</div><div style={{fontSize:'11px',color:'#ffd600',marginTop:'8px'}}>{blindSpot.prescription}</div></>:<div style={{fontSize:'12px',color:'#6b7280'}}>Henüz yeterli kör nokta verisi yok.</div>}
+                    </Card>
+                </div>
+                <Card title="🗺️ Unutma Haritası" subtitle="Hangi alan stabil, hangi alan dağılmaya açık?">
+                    {forgetMap.length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Ders verisi geldikçe hafıza risk haritası oluşur.</div>:
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>{forgetMap.map(s=><div key={s.id} style={{backgroundColor:s.zone.bg,border:`1px solid ${s.zone.c}33`,borderRadius:'12px',padding:'10px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'center'}}><div style={{fontSize:'13px',fontWeight:'700',color:s.color}}>{s.icon} {s.name}</div><span style={{fontSize:'10px',color:s.zone.c,fontWeight:'700'}}>{s.zone.l}</span></div><div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#9ca3af',marginTop:'8px',flexWrap:'wrap'}}>{s.masteryPct!==null&&<span>Hakimiyet %{s.masteryPct}</span>}<span>Due {s.due}</span><span>Hata14 {s.mis14}</span></div><div style={{marginTop:'8px'}}><PBar value={Math.min(s.risk,100)} max={100} color={s.zone.c} label={false} size="sm"/></div></div>)}</div>}
+                </Card>
+                <Card title="📋 Ders İstatistikleri">
+                    <div className="space-y-2">{subStats.filter(s=>s.tytQ>0||s.aytQ>0).map(s=><div key={s.id} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px',flexWrap:'wrap',gap:'4px'}}><span style={{fontSize:'13px',fontWeight:'600',color:s.color}}>{s.icon} {s.name}</span><div style={{display:'flex',gap:'8px',fontSize:'11px'}}>{s.tytQ>0&&<span style={{color:'#6c63ff'}}>TYT:{s.tytQ}</span>}{s.aytQ>0&&<span style={{color:'#ff9800'}}>AYT:{s.aytQ}</span>}<span style={{color:'#9ca3af'}}>⏱{Math.round(s.totalMins/60)}s</span>{s.mistakes>0&&<span style={{color:'#ff5252'}}>❌{s.mistakes}</span>}</div></div>{s.tytQ>0&&<div style={{marginBottom:'4px'}}><div style={{fontSize:'10px',color:'#6c63ff',marginBottom:'2px'}}>TYT ({s.tyt} soru/deneme)</div><PBar value={s.tytQ} max={Math.max(...subStats.map(x=>x.tytQ),1)} color="#6c63ff" label={false} size="sm"/></div>}{s.aytQ>0&&<div><div style={{fontSize:'10px',color:'#ff9800',marginBottom:'2px'}}>AYT ({s.ayt||'—'} soru/deneme)</div><PBar value={s.aytQ} max={Math.max(...subStats.map(x=>x.aytQ),1)} color="#ff9800" label={false} size="sm"/></div>}</div>)}</div>
                 </Card>
             </div>;
         };
@@ -1680,14 +2066,15 @@ const App=()=>{
             <h1 style={{fontSize:'20px',fontWeight:'bold',color:'#fff',margin:0}}>🎯 Hedefler</h1>
             <Card title="⏰ YKS Geri Sayım">
                 <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px',textAlign:'center'}}>
-                    {[{v:yksGun(),l:'Gün',c:'#6c63ff'},{v:Math.ceil(yksGun()/7),l:'Hafta',c:'#ffd600'},{v:Math.round(yksGun()/30),l:'Ay',c:'#00c853'}].map((x,i)=>(
+                    {[{v:yksGun(examDate),l:'Gün',c:'#6c63ff'},{v:Math.ceil(yksGun(examDate)/7),l:'Hafta',c:'#ffd600'},{v:Math.round(yksGun(examDate)/30),l:'Ay',c:'#00c853'}].map((x,i)=>(
                         <div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'14px'}}>
                             <div style={{fontSize:'26px',fontWeight:'bold',color:x.c}}>{x.v}</div>
                             <div style={{fontSize:'12px',color:'#6b7280'}}>{x.l}</div>
                         </div>
                     ))}
                 </div>
-                <div style={{textAlign:'center',marginTop:'10px',fontSize:'12px',color:'#6b7280'}}>📅 19 Haziran 2027</div>
+                <div style={{textAlign:'center',marginTop:'10px',fontSize:'12px',color:'#6b7280'}}>📅 {fdf(examDate)}</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginTop:'12px'}}><Inp label="İsim" value={commanderName} onChange={setCommanderName} placeholder="Örn. Mehmet"/><Inp label="Sınav Tarihi" type="date" value={examDate} onChange={setExamDate}/></div>
             </Card>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
                 <Card style={{border:'1px solid rgba(108,99,255,.25)'}}>
@@ -1705,21 +2092,39 @@ const App=()=>{
                     <div style={{fontSize:'12px',color:'#6b7280',marginTop:'4px'}}>Bugün: {aytQ} · Min: 50</div>
                 </Card>
             </div>
+            <Card title="🗓️ Haftalık Planlayıcı" subtitle={`${fd(weekStart)} - ${fd(weekEnd)}`}>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+                    <Inp label="Haftalık soru" type="number" value={weeklyPlan.questions} onChange={v=>setWeeklyPlan(p=>({...p,questions:iVal(v)}))}/>
+                    <Inp label="Haftalık dakika" type="number" value={weeklyPlan.minutes} onChange={v=>setWeeklyPlan(p=>({...p,minutes:iVal(v)}))}/>
+                    <Inp label="Haftalık deneme" type="number" value={weeklyPlan.exams} onChange={v=>setWeeklyPlan(p=>({...p,exams:iVal(v)}))}/>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginTop:'12px'}}>
+                    {[{l:'Soru',v:weekQuestions,t:weeklyPlan.questions,c:'#6c63ff'},{l:'Dakika',v:weekMinutes,t:weeklyPlan.minutes,c:'#00c853'},{l:'Deneme',v:weekExams.length,t:weeklyPlan.exams,c:'#ff9800'}].map((x,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',marginBottom:'4px'}}><span style={{color:'#9ca3af'}}>{x.l}</span><span style={{color:x.c,fontWeight:'700'}}>{x.v}/{x.t}</span></div><PBar value={x.v} max={Math.max(x.t,1)} color={x.c} label={false} size="sm"/></div>)}
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'14px',marginBottom:'8px',flexWrap:'wrap',gap:'8px'}}>
+                    <div style={{fontSize:'12px',fontWeight:'700',color:'#fff'}}>Derslere yüzde dağılım</div>
+                    <div style={{fontSize:'11px',color:weeklyDistTotal===100?'#00c853':'#ff9800'}}>Toplam %{weeklyDistTotal}</div>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+                    {SUBS.map(s=><Inp key={s.id} label={`${s.icon} ${s.name}`} type="number" value={(weeklyPlan.dist||{})[s.id]||0} onChange={v=>setWeeklyPlan(p=>({...p,dist:{...(p.dist||{}),[s.id]:iVal(v)}}))} min="0"/>) }
+                </div>
+                <div style={{marginTop:'14px'}}>
+                    <div style={{fontSize:'12px',fontWeight:'700',color:'#fff',marginBottom:'8px'}}>Haftalık gerçekleşen / kalan</div>
+                    <div className="space-y-2">{[...weeklyRows].sort((a,b)=>b.remaining-a.remaining).slice(0,6).map(r=><div key={r.id} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'8px 10px'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',marginBottom:'4px'}}><span style={{color:r.color}}>{r.icon} {r.name}</span><span style={{color:'#9ca3af'}}>{r.actualQ}/{r.targetQ} soru · %{r.pct}</span></div><PBar value={r.actualQ} max={Math.max(r.targetQ,1)} color={r.color} label={false} size="sm"/></div>)}</div>
+                </div>
+            </Card>
             <Card title={`${lvl.i} ${lvl.n}`}>
                 <div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#6b7280',marginBottom:'6px'}}><span>{xp} XP</span><span>{nLvl.min} XP</span></div>
                 <PBar value={xp-lvl.min} max={Math.max(nLvl.min-lvl.min,1)} color="#6c63ff" label={false} size="xl"/>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'6px',marginTop:'14px'}}>
-                    {LEVELS.map((l,i)=><div key={i} style={{borderRadius:'10px',padding:'8px',textAlign:'center',border:`1px solid ${xp>=l.min?'#6c63ff':'#2a2a3e'}`,backgroundColor:xp>=l.min?'rgba(108,99,255,.1)':'transparent',opacity:xp>=l.min?1:.35}}>
-                        <div style={{fontSize:'14px'}}>{l.i}</div>
-                        <div style={{fontSize:'9px',color:'#9ca3af',marginTop:'2px'}}>{l.n}</div>
-                    </div>)}
+                    {LEVELS.map((l,i)=><div key={i} style={{borderRadius:'10px',padding:'8px',textAlign:'center',border:`1px solid ${xp>=l.min?'#6c63ff':'#2a2a3e'}`,backgroundColor:xp>=l.min?'rgba(108,99,255,.1)':'transparent',opacity:xp>=l.min?1:.35}}><div style={{fontSize:'14px'}}>{l.i}</div><div style={{fontSize:'9px',color:'#9ca3af',marginTop:'2px'}}>{l.n}</div></div>)}
                 </div>
             </Card>
             <Card title="💾 Yedekleme">
                 <div style={{display:'flex',gap:'8px'}}>
-                    <Btn onClick={()=>{const d={version:'4.0',date:new Date().toISOString(),sessions,exams,mistakes,topics,xp,tasks,dailyLogs,flashcards};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`yks-backup-${td()}.json`;a.click();URL.revokeObjectURL(u);notify('✅ Yedek indirildi!')}} v="success" s="sm">⬇️ Export</Btn>
+                    <Btn onClick={()=>{const d={version:'4.3',date:new Date().toISOString(),commanderName,examDate,weeklyPlan,sessions,exams,mistakes,topics,xp,tasks,dailyLogs,earnedBadges,flashcards};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`yks-backup-${td()}.json`;a.click();URL.revokeObjectURL(u);notify('✅ Yedek indirildi!')}} v="success" s="sm">⬇️ Export</Btn>
                     <label><Btn v="ghost" s="sm" onClick={()=>document.getElementById('imp-f').click()}>⬆️ Import</Btn>
-                        <input id="imp-f" type="file" accept=".json" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.sessions)setSessions(d.sessions);if(d.exams)setExams(d.exams);if(d.mistakes)setMistakes(d.mistakes);if(d.topics)setTopics(d.topics);if(d.xp)setXp(d.xp);if(d.flashcards)setFlashcards(d.flashcards.map(c=>({...SM2.init(),...c})));notify('✅ Veri yüklendi!')}catch{notify('❌ Geçersiz dosya!')}};r.readAsText(f);e.target.value=''}}/>
+                        <input id="imp-f" type="file" accept=".json" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if('sessions' in d)setSessions(Array.isArray(d.sessions)?d.sessions:[]);if('exams' in d)setExams(Array.isArray(d.exams)?d.exams:[]);if('mistakes' in d)setMistakes(Array.isArray(d.mistakes)?d.mistakes:[]);if('topics' in d)setTopics(d.topics||{});if('xp' in d)setXp(Number(d.xp)||0);if('tasks' in d)setTasks(Array.isArray(d.tasks)?d.tasks:[]);if('dailyLogs' in d)setDailyLogs(Array.isArray(d.dailyLogs)?d.dailyLogs:[]);if('earnedBadges' in d)setEarnedBadges(Array.isArray(d.earnedBadges)?d.earnedBadges:[]);if('examDate' in d&&d.examDate)setExamDate(d.examDate);if('commanderName' in d&&d.commanderName)setCommanderName(d.commanderName);if('weeklyPlan' in d)setWeeklyPlan(d.weeklyPlan||WEEKLY_PLAN_DEFAULT());if('flashcards' in d)setFlashcards(Array.isArray(d.flashcards)?d.flashcards.map(c=>({...SM2.init(),...c})):[]);notify('✅ Veri yüklendi!')}catch{notify('❌ Geçersiz dosya!')}};r.readAsText(f);e.target.value=''}}/>
                     </label>
                 </div>
             </Card>
@@ -1740,9 +2145,9 @@ const App=()=>{
 
     const pages={
         dashboard:DashPg,
-        brainlab:()=><BrainLab flashcards={flashcards} sessions={sessions} exams={exams}/>,
+        brainlab:()=><BrainLab flashcards={flashcards} sessions={sessions} exams={exams} mistakes={mistakes} topics={topics}/>,
         study:StudyPg,exams:ExamPg,mistakes:MistPg,
-        topics:()=><TopPg topics={topics} setTopics={setTopics} addXp={addXp} notify={notify}/>,
+        topics:()=><TopPg topics={topics} setTopics={setTopics} addXp={addXp} notify={notify} sessions={sessions} mistakes={mistakes}/>,
         tools:ToolsPg,goals:GoalPg
     };
     const Pg=pages[pg]||DashPg;
@@ -1753,8 +2158,8 @@ const App=()=>{
         {/* Desktop sidebar */}
         <div className="hidden md:flex" style={{position:'fixed',left:0,top:0,bottom:0,width:'192px',backgroundColor:'#12121a',borderRight:'1px solid #2a2a3e',flexDirection:'column',zIndex:40}}>
             <div style={{padding:'16px',borderBottom:'1px solid #2a2a3e'}}>
-                <div style={{fontSize:'18px',fontWeight:'bold',color:'#6c63ff'}}>⚡ YKS Pro</div>
-                <div style={{fontSize:'11px',color:'#4b5563',marginTop:'2px'}}>Mehmet Zeki</div>
+                <div style={{fontSize:'18px',fontWeight:'bold',color:'#6c63ff'}}>⚡ YKS Merkezi</div>
+                <div style={{fontSize:'11px',color:'#4b5563',marginTop:'2px'}}>{commanderName}</div>
             </div>
             <div style={{flex:1,paddingTop:'8px',overflowY:'auto'}}>
                 {nav.map(n=>{const dot=n.id==='brainlab'&&dueFC>0;return(
@@ -1809,12 +2214,13 @@ const App=()=>{
                         {t} {t==='TYT'?'(max 120 net)':'(max 80 net)'}
                     </button>)}
                 </div>
-                <Sel label="Ders" value={sF.subject} onChange={v=>setSF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:`${s.icon} ${s.name} (TYT:${s.tyt} AYT:${s.ayt})`}))}/>
+                <Sel label="Ders" value={sF.subject} onChange={v=>setSF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:`${s.icon} ${s.name}`}))}/>
                 <Inp label="Konu" value={sF.topic} onChange={v=>setSF(p=>({...p,topic:v}))} placeholder="Konu adı..."/>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
                     <Inp label="Süre (dk)" type="number" value={sF.dur} onChange={v=>setSF(p=>({...p,dur:v}))} min="1"/>
                     <Inp label="Soru Sayısı" type="number" value={sF.qc} onChange={v=>setSF(p=>({...p,qc:v}))} min="0"/>
                 </div>
+                <Inp label="Kaynak / Yayın" value={sF.source||''} onChange={v=>setSF(p=>({...p,source:v}))} placeholder="Örn. 345 / Bilgi Sarmal / Orijinal"/>
                 {sF.qc&&parseInt(sF.qc)>0&&<div style={{backgroundColor:'rgba(108,99,255,.1)',border:'1px solid rgba(108,99,255,.3)',borderRadius:'10px',padding:'8px 12px',fontSize:'12px',color:'#9ca3af',textAlign:'center'}}>
                     {sF.examType} Hedef: {sF.examType==='TYT'?`${parseInt(sF.qc)||0}/120`:`${parseInt(sF.qc)||0}/80`}
                 </div>}
@@ -1836,19 +2242,23 @@ const App=()=>{
                         {t} Denemesi
                     </button>)}
                 </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                    <Inp label="Deneme Adı" value={eMeta.title} onChange={v=>setEMeta(p=>({...p,title:v}))} placeholder="Örn. TG-5 / Branş Denemesi"/>
+                    <Inp label="Kaynak / Yayın" value={eMeta.source} onChange={v=>setEMeta(p=>({...p,source:v}))} placeholder="Örn. 345 / Orijinal"/>
+                </div>
 
                 {/* TYT FORM */}
                 {eType==='TYT'&&<>
                     <div style={{backgroundColor:'rgba(108,99,255,.08)',borderRadius:'12px',padding:'12px',marginBottom:'4px'}}>
-                        <div style={{fontSize:'12px',color:'#6c63ff',fontWeight:'700',marginBottom:'8px'}}>TYT — Toplam 120 Soru</div>
+                        <div style={{fontSize:'12px',color:'#6c63ff',fontWeight:'700',marginBottom:'8px'}}>TYT — Toplam 120 Soru</div><div style={{fontSize:'11px',color:'#6b7280',marginBottom:'8px'}}>Bir bölümde doğru + yanlış toplamı bölüm soru sayısını aşamaz.</div>
                         <div style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr',gap:'8px',alignItems:'center',fontSize:'12px',color:'#6b7280',marginBottom:'6px'}}>
                             <span></span><span style={{textAlign:'center'}}>Doğru</span><span style={{textAlign:'center'}}>Yanlış</span>
                         </div>
                         {[{l:'Türkçe (40)',d:'turkD',y:'turkY',max:40,c:'#29b6f6'},{l:'Matematik (40)',d:'matD',y:'matY',max:40,c:'#6c63ff'},{l:'Fen Bil. (20)',d:'fenD',y:'fenY',max:20,c:'#00c853'},{l:'Sosyal Bil. (20)',d:'sosD',y:'sosY',max:20,c:'#ff9800'}].map(x=>(
                             <div key={x.l} style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr',gap:'8px',alignItems:'center',marginBottom:'6px'}}>
                                 <span style={{fontSize:'12px',color:x.c,fontWeight:'600',minWidth:'90px'}}>{x.l}</span>
-                                <Inp type="number" value={eTYT[x.d]} onChange={v=>setETYT(p=>({...p,[x.d]:v}))} placeholder={`0-${x.max}`} min="0" max={x.max}/>
-                                <Inp type="number" value={eTYT[x.y]} onChange={v=>setETYT(p=>({...p,[x.y]:v}))} placeholder="0" min="0"/>
+                                <Inp type="number" value={eTYT[x.d]} onChange={v=>setETYT(p=>fitSection(p,x.d,x.y,x.max,v))} placeholder={`0-${x.max}`} min="0" max={x.max}/>
+                                <Inp type="number" value={eTYT[x.y]} onChange={v=>setETYT(p=>fitSection(p,x.y,x.d,x.max,v))} placeholder="0" min="0"/>
                             </div>
                         ))}
                     </div>
@@ -1877,25 +2287,31 @@ const App=()=>{
                         </button>)}
                     </div>
                     <div style={{backgroundColor:'rgba(255,152,0,.08)',borderRadius:'12px',padding:'12px'}}>
-                        <div style={{fontSize:'12px',color:'#ff9800',fontWeight:'700',marginBottom:'8px'}}>AYT {AYT_FIELDS[eAYT.field]?.name} — Max 80 Net</div>
+                        <div style={{fontSize:'12px',color:'#ff9800',fontWeight:'700',marginBottom:'8px'}}>AYT {AYT_FIELDS[eAYT.field]?.name} — Max 80 Net</div><div style={{fontSize:'11px',color:'#6b7280',marginBottom:'8px'}}>Sistem her derste doğru + yanlış toplamını otomatik olarak soru sınırında tutar.</div>
                         <div style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr',gap:'8px',alignItems:'center',fontSize:'12px',color:'#6b7280',marginBottom:'6px'}}>
                             <span></span><span style={{textAlign:'center'}}>Doğru</span><span style={{textAlign:'center'}}>Yanlış</span>
                         </div>
                         {eAYT.field==='sayisal'&&[{l:'Matematik (40)',d:'matD',y:'matY',max:40,c:'#6c63ff'},{l:'Fizik (14)',d:'fizD',y:'fizY',max:14,c:'#00c853'},{l:'Kimya (13)',d:'kimD',y:'kimY',max:13,c:'#ffd600'},{l:'Biyoloji (13)',d:'bioD',y:'bioY',max:13,c:'#ff5252'}].map(x=>(
                             <div key={x.l} style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr',gap:'8px',alignItems:'center',marginBottom:'6px'}}>
                                 <span style={{fontSize:'12px',color:x.c,fontWeight:'600',minWidth:'90px'}}>{x.l}</span>
-                                <Inp type="number" value={eAYT[x.d]} onChange={v=>setEAYT(p=>({...p,[x.d]:v}))} placeholder={`0-${x.max}`} min="0" max={x.max}/>
-                                <Inp type="number" value={eAYT[x.y]} onChange={v=>setEAYT(p=>({...p,[x.y]:v}))} placeholder="0" min="0"/>
+                                <Inp type="number" value={eAYT[x.d]} onChange={v=>setEAYT(p=>fitSection(p,x.d,x.y,x.max,v))} placeholder={`0-${x.max}`} min="0" max={x.max}/>
+                                <Inp type="number" value={eAYT[x.y]} onChange={v=>setEAYT(p=>fitSection(p,x.y,x.d,x.max,v))} placeholder="0" min="0"/>
                             </div>
                         ))}
                         {eAYT.field==='ea'&&[{l:'Türk Dili/Edb (24)',d:'edbD',y:'edbY',max:24,c:'#29b6f6'},{l:'Matematik (40)',d:'matD',y:'matY',max:40,c:'#6c63ff'},{l:'Tarih-1 (10)',d:'tar1D',y:'tar1Y',max:10,c:'#ff9800'},{l:'Coğrafya-1 (6)',d:'cog1D',y:'cog1Y',max:6,c:'#e91e63'}].map(x=>(
                             <div key={x.l} style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr',gap:'8px',alignItems:'center',marginBottom:'6px'}}>
                                 <span style={{fontSize:'12px',color:x.c,fontWeight:'600',minWidth:'90px'}}>{x.l}</span>
-                                <Inp type="number" value={eAYT[x.d]} onChange={v=>setEAYT(p=>({...p,[x.d]:v}))} placeholder={`0-${x.max}`} min="0" max={x.max}/>
-                                <Inp type="number" value={eAYT[x.y]} onChange={v=>setEAYT(p=>({...p,[x.y]:v}))} placeholder="0" min="0"/>
+                                <Inp type="number" value={eAYT[x.d]} onChange={v=>setEAYT(p=>fitSection(p,x.d,x.y,x.max,v))} placeholder={`0-${x.max}`} min="0" max={x.max}/>
+                                <Inp type="number" value={eAYT[x.y]} onChange={v=>setEAYT(p=>fitSection(p,x.y,x.d,x.max,v))} placeholder="0" min="0"/>
                             </div>
                         ))}
-                        {eAYT.field==='sozel'&&<p style={{color:'#9ca3af',fontSize:'13px',padding:'8px 0'}}>Sözel alanı yakında eklenecek.</p>}
+                        {eAYT.field==='sozel'&&[{l:'Edebiyat (24)',d:'edbD',y:'edbY',max:24,c:'#29b6f6'},{l:'Tarih-1 (10)',d:'tar1D',y:'tar1Y',max:10,c:'#ff9800'},{l:'Coğ-1 (6)',d:'cog1D',y:'cog1Y',max:6,c:'#e91e63'},{l:'Tarih-2 (11)',d:'tar2D',y:'tar2Y',max:11,c:'#ffb74d'},{l:'Coğ-2 (11)',d:'cog2D',y:'cog2Y',max:11,c:'#ec407a'},{l:'Felsefe (12)',d:'felD',y:'felY',max:12,c:'#9c27b0'},{l:'Din (6)',d:'dinD',y:'dinY',max:6,c:'#795548'}].map(x=>(
+                            <div key={x.l} style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr',gap:'8px',alignItems:'center',marginBottom:'6px'}}>
+                                <span style={{fontSize:'12px',color:x.c,fontWeight:'600',minWidth:'90px'}}>{x.l}</span>
+                                <Inp type="number" value={eAYT[x.d]} onChange={v=>setEAYT(p=>fitSection(p,x.d,x.y,x.max,v))} placeholder={`0-${x.max}`} min="0" max={x.max}/>
+                                <Inp type="number" value={eAYT[x.y]} onChange={v=>setEAYT(p=>fitSection(p,x.y,x.d,x.max,v))} placeholder="0" min="0" max={x.max}/>
+                            </div>
+                        ))}
                     </div>
                     {/* AYT Net Preview */}
                     {eAYT.field==='sayisal'&&<div style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'12px'}}>
@@ -1919,20 +2335,36 @@ const App=()=>{
                         </div>
                         <PBar value={aytNet.tot||0} max={80} color="#ff9800" label={false} size="md"/>
                     </div>}
+                    {eAYT.field==='sozel'&&<div style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'12px'}}>
+                        <div style={{fontSize:'12px',color:'#6b7280',marginBottom:'6px'}}>Net Önizleme</div>
+                        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center'}}>
+                            {[{l:'Edb',v:aytNet.e,c:'#29b6f6'},{l:'T1',v:aytNet.t1,c:'#ff9800'},{l:'C1',v:aytNet.c1,c:'#e91e63'},{l:'T2',v:aytNet.t2,c:'#ffb74d'},{l:'C2',v:aytNet.c2,c:'#ec407a'},{l:'Fel',v:aytNet.fel,c:'#9c27b0'},{l:'Din',v:aytNet.din,c:'#795548'},{l:'TOP',v:aytNet.tot,c:'#fff'}].map(x=><div key={x.l}>
+                                <div style={{fontSize:'13px',fontWeight:'bold',color:x.c}}>{(x.v||0).toFixed(1)}</div>
+                                <div style={{fontSize:'10px',color:'#6b7280'}}>{x.l}</div>
+                            </div>)}
+                        </div>
+                        <PBar value={aytNet.tot||0} max={80} color="#ff9800" label={false} size="md"/>
+                    </div>}
                     <Btn onClick={addAYTExam} v="orange" style={{width:'100%',justifyContent:'center'}}>💾 AYT Kaydet (+30 XP)</Btn>
                 </>}
             </div>
         </Modal>
 
         {/* MODAL: Mistake */}
-        <Modal isOpen={modal.open&&modal.type==='mistake'} onClose={closeMd} title="📕 Hata Ekle">
+        <Modal isOpen={modal.open&&modal.type==='mistake'} onClose={()=>{setMF({id:null,subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi',source:'',image:'',resolved:false});closeMd();}} title="📕 Hata Ekle">
             <div className="space-y-3">
                 <Sel label="Ders" value={mF.subject} onChange={v=>setMF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:`${s.icon} ${s.name}`}))}/>
                 <Inp label="Konu" value={mF.topic} onChange={v=>setMF(p=>({...p,topic:v}))} placeholder="Konu adı..."/>
+                <Inp label="Kaynak / Yayın" value={mF.source||''} onChange={v=>setMF(p=>({...p,source:v}))} placeholder="Örn. 345 / Branş denemesi / okul sınavı"/>
                 <Sel label="Hata Türü" value={mF.type} onChange={v=>setMF(p=>({...p,type:v}))} options={MTYPES.map(t=>({value:t.id,label:t.name}))}/>
                 <Txt label="Hata Açıklaması" value={mF.desc} onChange={v=>setMF(p=>({...p,desc:v}))} placeholder="Ne hata yaptım?"/>
                 <Txt label="Doğru Çözüm" value={mF.logic} onChange={v=>setMF(p=>({...p,logic:v}))} placeholder="Doğru yöntem..." rows={2}/>
-                <Btn onClick={addMistake} style={{width:'100%',justifyContent:'center'}}>💾 Kaydet (+5 XP)</Btn>
+                <div>
+                    <label style={{display:'block',fontSize:'12px',color:'#6b7280',marginBottom:'4px'}}>Fotoğraf / ekran görüntüsü</label>
+                    <input type="file" accept="image/*" style={{width:'100%',fontSize:'12px',color:'#9ca3af'}} onChange={e=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>1200000){notify('⚠️ Görsel çok büyük. 1.2MB altı seç.');e.target.value='';return}const r=new FileReader();r.onload=ev=>setMF(p=>({...p,image:ev.target.result}));r.readAsDataURL(f);}}/>
+                    {mF.image&&<div style={{marginTop:'8px'}}><img src={mF.image} alt="Önizleme" style={{width:'100%',maxHeight:'180px',objectFit:'contain',borderRadius:'12px',border:'1px solid #2a2a3e',backgroundColor:'#0a0a0f'}}/><button onClick={()=>setMF(p=>({...p,image:''}))} style={{marginTop:'6px',background:'none',border:'none',color:'#ff5252',cursor:'pointer',fontSize:'12px'}}>Görseli kaldır</button></div>}
+                </div>
+                <label style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'12px',color:'#9ca3af'}}><input type='checkbox' checked={!!mF.resolved} onChange={e=>setMF(p=>({...p,resolved:e.target.checked}))} style={{accentColor:'#6c63ff'}}/>Bu hata kapandı olarak işaretlensin</label><Btn onClick={addMistake} style={{width:'100%',justifyContent:'center'}}>{mF.id?'💾 Güncelle':'💾 Kaydet (+5 XP)'}</Btn>
             </div>
         </Modal>
 
@@ -1964,6 +2396,14 @@ const App=()=>{
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+        navigator.serviceWorker.getRegistrations()
+            .then(regs=>Promise.all(regs.map(r=>r.unregister())))
+            .then(()=>('caches' in window?caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))):null))
+            .catch(()=>{});
+    });
+}
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0bc3fd5b803c71b',t:'MTc4MTQ3MDY2Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
