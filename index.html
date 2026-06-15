@@ -43,6 +43,14 @@
         .scanline{position:relative;overflow:hidden}
         .scanline::after{content:'';position:absolute;left:0;right:0;top:-40%;height:40%;background:linear-gradient(to bottom, rgba(255,255,255,0), rgba(108,99,255,.08), rgba(255,255,255,0));animation:scan 6s linear infinite;pointer-events:none}
         @keyframes scan{to{transform:translateY(320%)}}
+        .camp-panel{background:linear-gradient(180deg, rgba(108,99,255,.08), rgba(18,18,26,1));border:1px solid rgba(108,99,255,.22)}
+        .soft-card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));border:1px solid rgba(255,255,255,.05);border-radius:14px}
+        .guide-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+        .guide-step{background:linear-gradient(180deg, rgba(26,26,46,.9), rgba(10,10,15,.95));border:1px solid #2a2a3e;border-radius:16px;padding:12px}
+        .guide-step .k{font-size:11px;color:#9ca3af;margin-bottom:4px}
+        .guide-step .t{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+        .guide-step .d{font-size:12px;color:#cbd5e1;line-height:1.45}
+        .guide-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(108,99,255,.12);border:1px solid rgba(108,99,255,.22);color:#cbd5e1}
     </style>
 </head>
 <body>
@@ -217,18 +225,32 @@ const LEVELS=[
 ];
 
 const BADGES=[
-    {id:'first',    n:'İlk Adım',     i:'🎯',d:'İlk oturumu tamamla',      chk:(s)=>s.length>=1},
-    {id:'streak3',  n:'3 Gün Serisi', i:'🔥',d:'3 gün üst üste çalış',     chk:(s,e,m,str)=>str>=3},
-    {id:'streak7',  n:'Haftalık Seri',i:'⚡',d:'7 gün üst üste çalış',     chk:(s,e,m,str)=>str>=7},
-    {id:'q500',     n:'500 Soru',     i:'📝',d:'Toplam 500 soru',           chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=500},
-    {id:'q2000',    n:'2000 Soru',    i:'🏆',d:'Toplam 2000 soru',          chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=2000},
-    {id:'tyt120',   n:'Mükemmel TYT', i:'🎓',d:'Günde 120 TYT sorusu çöz', chk:(s)=>{const t=td();return s.filter(x=>x.date===t&&(x.examType||'TYT')==='TYT').reduce((a,x)=>a+qInt(x),0)>=120}},
-    {id:'ayt80',    n:'Mükemmel AYT', i:'🧪',d:'Günde 80 AYT sorusu çöz',  chk:(s)=>{const t=td();return s.filter(x=>x.date===t&&x.examType==='AYT').reduce((a,x)=>a+qInt(x),0)>=80}},
-    {id:'exam5',    n:'5 Deneme',     i:'📊',d:'5 deneme çöz',              chk:(s,e)=>e.length>=5},
-    {id:'exam20',   n:'20 Deneme',    i:'💯',d:'20 deneme çöz',             chk:(s,e)=>e.length>=20},
-    {id:'sr50',     n:'50 SR Tekrar', i:'🧠',d:'50 spaced rep tekrar',      chk:(s,e,m,st,xp,fc)=>(fc||[]).reduce((a,c)=>a+(c.totalReviews||0),0)>=50},
-    {id:'xp1000',   n:'1000 XP',      i:'💎',d:'1000 XP kazan',             chk:(s,e,m,st,xp)=>xp>=1000},
-    {id:'ret90',    n:'Hafıza Ustası',i:'🔮',d:'%90+ hafıza skoru tut',     chk:(s,e,m,st,xp,fc)=>{const a=(fc||[]).filter(c=>c.totalReviews>0);return a.length>=5&&a.reduce((x,c)=>x+SM2.getRetention(c),0)/a.length>=90}},
+    {id:'first',      n:'İlk Adım',        i:'🎯',d:'İlk oturumu tamamla',                chk:(s)=>s.length>=1},
+    {id:'streak3',    n:'3 Gün Serisi',    i:'🔥',d:'3 gün üst üste çalış',               chk:(s,e,m,str)=>str>=3},
+    {id:'streak7',    n:'Haftalık Seri',   i:'⚡',d:'7 gün üst üste çalış',               chk:(s,e,m,str)=>str>=7},
+    {id:'streak14',   n:'14 Gün Disiplin', i:'🧱',d:'14 gün üst üste çalış',              chk:(s,e,m,str)=>str>=14},
+    {id:'streak30',   n:'30 Gün İrade',    i:'🗓️',d:'30 gün üst üste çalış',              chk:(s,e,m,str)=>str>=30},
+    {id:'q500',       n:'500 Soru',        i:'📝',d:'Toplam 500 soru',                    chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=500},
+    {id:'q2000',      n:'2000 Soru',       i:'🏆',d:'Toplam 2000 soru',                   chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=2000},
+    {id:'q5000',      n:'5000 Soru',       i:'🚀',d:'Toplam 5000 soru',                   chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=5000},
+    {id:'q10000',     n:'10000 Soru',      i:'🌌',d:'Toplam 10000 soru',                  chk:(s)=>s.reduce((a,x)=>a+qInt(x),0)>=10000},
+    {id:'hours50',    n:'50 Saat',         i:'⏳',d:'Toplam 50 saat çalış',                chk:(s)=>s.reduce((a,x)=>a+dInt(x),0)>=3000},
+    {id:'hours150',   n:'150 Saat',        i:'⌛',d:'Toplam 150 saat çalış',               chk:(s)=>s.reduce((a,x)=>a+dInt(x),0)>=9000},
+    {id:'tyt120',     n:'Mükemmel TYT',    i:'🎓',d:'Günde 120 TYT sorusu çöz',           chk:(s)=>{const t=td();return s.filter(x=>x.date===t&&(x.examType||'TYT')==='TYT').reduce((a,x)=>a+qInt(x),0)>=120}},
+    {id:'ayt80',      n:'Mükemmel AYT',    i:'🧪',d:'Günde 80 AYT sorusu çöz',            chk:(s)=>{const t=td();return s.filter(x=>x.date===t&&x.examType==='AYT').reduce((a,x)=>a+qInt(x),0)>=80}},
+    {id:'exam5',      n:'5 Deneme',        i:'📊',d:'5 deneme çöz',                        chk:(s,e)=>e.length>=5},
+    {id:'exam20',     n:'20 Deneme',       i:'💯',d:'20 deneme çöz',                       chk:(s,e)=>e.length>=20},
+    {id:'tyt10',      n:'10 TYT Deneme',   i:'📘',d:'10 TYT denemesi çöz',                 chk:(s,e)=>e.filter(x=>!x.examType||x.examType==='TYT').length>=10},
+    {id:'tyt90',      n:'90 TYT',          i:'🥇',d:'Bir TYT denemesinde 90+ net gör',     chk:(s,e)=>e.some(x=>(!x.examType||x.examType==='TYT')&&(x.tot||0)>=90)},
+    {id:'tyt100',     n:'100 TYT',         i:'👑',d:'Bir TYT denemesinde 100+ net gör',    chk:(s,e)=>e.some(x=>(!x.examType||x.examType==='TYT')&&(x.tot||0)>=100)},
+    {id:'mistake25',  n:'25 Hata Notu',    i:'📕',d:'25 hata kaydı oluştur',               chk:(s,e,m)=>m.length>=25},
+    {id:'mistake100', n:'100 Hata Notu',   i:'🧾',d:'100 hata kaydı oluştur',              chk:(s,e,m)=>m.length>=100},
+    {id:'source5',    n:'Kaynak Gezgini',  i:'📚',d:'5 farklı kaynak kullan',              chk:(s,e,m)=>new Set([...s.map(x=>srcName(x.source)).filter(x=>x!=='Belirtilmedi'),...e.map(x=>srcName(x.source||x.title)).filter(x=>x!=='Belirtilmedi'),...m.map(x=>srcName(x.source)).filter(x=>x!=='Belirtilmedi')]).size>=5},
+    {id:'sr50',       n:'50 SR Tekrar',    i:'🧠',d:'50 spaced rep tekrar',                chk:(s,e,m,st,xp,fc)=>(fc||[]).reduce((a,c)=>a+(c.totalReviews||0),0)>=50},
+    {id:'sr200',      n:'200 SR Tekrar',   i:'🧠',d:'200 spaced rep tekrar',               chk:(s,e,m,st,xp,fc)=>(fc||[]).reduce((a,c)=>a+(c.totalReviews||0),0)>=200},
+    {id:'xp1000',     n:'1000 XP',         i:'💎',d:'1000 XP kazan',                       chk:(s,e,m,st,xp)=>xp>=1000},
+    {id:'xp5000',     n:'5000 XP',         i:'💠',d:'5000 XP kazan',                       chk:(s,e,m,st,xp)=>xp>=5000},
+    {id:'ret90',      n:'Hafıza Ustası',   i:'🔮',d:'%90+ hafıza skoru tut',               chk:(s,e,m,st,xp,fc)=>{const a=(fc||[]).filter(c=>c.totalReviews>0);return a.length>=5&&a.reduce((x,c)=>x+SM2.getRetention(c),0)/a.length>=90}},
 ];
 
 // ── UTILS ──────────────────────────────────────────────────────
@@ -260,6 +282,22 @@ const retC =r=>r>=80?'#00c853':r>=60?'#ffd600':r>=40?'#ff9800':'#ff5252';
 const isTYT=s=>(s.examType||'TYT')==='TYT';
 const isAYT=s=>s.examType==='AYT';
 const WEEKLY_PLAN_DEFAULT=()=>({questions:350,minutes:900,exams:2,dist:{turkce:20,matematik:20,fizik:10,kimya:10,biyoloji:10,tarih:10,cografya:10,felsefe:5,din:5}});
+const TYT_CAMP_SUBJECTS=['turkce','matematik','fizik','kimya','biyoloji','tarih','cografya','felsefe','din'];
+const toMin=h=>{const[a,b]=(h||'0:0').split(':').map(Number);return a*60+b};
+const CAMP_TIMELINE=(isFriday=false)=>[
+    {id:'school_am',label:'Öğle Öncesi Dersler',start:'09:00',end:'12:10',type:'school'},
+    {id:'lunch',label:'Öğle Yemeği',start:'12:10',end:'13:00',type:'meal'},
+    {id:'school_pm',label:'Öğle Sonrası Dersler',start:isFriday?'13:10':'13:00',end:'14:30',type:'school',note:isFriday?'Cuma günü 5. ders 13:10 başlar.':''},
+    {id:'camp1',label:'Okulda 1. Etüt',start:'15:00',end:'16:00',type:'camp',minutes:60},
+    {id:'camp2',label:'Okulda 2. Etüt',start:'16:15',end:'17:15',type:'camp',minutes:60},
+    {id:'free',label:'Serbest Zaman / Eve Dönüş',start:'17:15',end:'18:00',type:'free'},
+    {id:'dinner',label:'Akşam Yemeği',start:'18:00',end:'18:30',type:'meal'},
+    {id:'camp3',label:'Pansiyon 1. Etüt',start:'19:00',end:'19:50',type:'camp',minutes:50},
+    {id:'break',label:'Mola',start:'19:50',end:'20:10',type:'break'},
+    {id:'camp4',label:'Pansiyon 2. Etüt',start:'20:10',end:'21:00',type:'camp',minutes:50},
+    {id:'rest',label:'Serbest Zaman',start:'21:00',end:'23:00',type:'free'},
+    {id:'sleep',label:'Yatma Zamanı',start:'23:00',end:'23:59',type:'sleep'}
+];
 
 // Linear regression for score prediction
 const linReg=vals=>{
@@ -826,7 +864,7 @@ const BrainLab=memo(({flashcards,sessions,exams,mistakes,topics})=>{
         sessions.forEach(s=>{const row=ensure(s.source);row.questions+=qInt(s);row.minutes+=dInt(s);});
         exams.forEach(e=>{const row=ensure(e.source||e.title);row.examCount+=1;row.normNetSum+=((e.tot||0)/(e.examType==='AYT'?80:120))*100;});
         mistakes.forEach(m=>{const row=ensure(m.source);row.mistakes+=1;if(!(m.resolved||m.closed))row.openMistakes+=1;});
-        return Object.values(map).map(r=>({...r,avgNorm:r.examCount?Math.round((r.normNetSum/r.examCount)*10)/10:null,efficiency:Math.round(r.questions + r.minutes*0.25 + (r.avgNorm||0)*4 - r.openMistakes*8)})).sort((a,b)=>b.efficiency-a.efficiency);
+        return Object.values(map).map(r=>{const avgNorm=r.examCount?Math.round((r.normNetSum/r.examCount)*10)/10:null;return {...r,avgNorm,efficiency:Math.round(r.questions + r.minutes*0.25 + ((avgNorm||0)*4) - r.openMistakes*8)}}).sort((a,b)=>b.efficiency-a.efficiency);
     },[sessions,exams,mistakes]);
 
     const reviewItems=useMemo(()=>{
@@ -841,6 +879,7 @@ const BrainLab=memo(({flashcards,sessions,exams,mistakes,topics})=>{
         reviewItems.forEach(i=>{if(i.eligible.includes(reviewField))map[i.sub]=i.subLabel;});
         return [{value:'all',label:'Tümü'},...Object.entries(map).map(([value,label])=>({value,label}))];
     },[reviewItems,reviewField]);
+    useEffect(()=>{if(!reviewSubOptions.find(o=>o.value===reviewSub))setReviewSub('all')},[reviewSubOptions,reviewSub]);
 
     const buildReview=(mode='all')=>{
         let pool=reviewItems.filter(i=>i.eligible.includes(reviewField));
@@ -1155,7 +1194,7 @@ const App=()=>{
     const[flashcards,setFlashcards]=useState(()=>S.g('flashcards',[]).map(c=>({...SM2.init(),...c})));
 
     // Session form — TYT/AYT explicit
-    const[sF,setSF]=useState({subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',correct:'',wrong:''});
+    const[sF,setSF]=useState({id:null,subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',campSlot:'',correct:'',wrong:''});
     
     // Exam forms
     const TYT_INIT=()=>({turkD:'',turkY:'',matD:'',matY:'',fenD:'',fenY:'',sosD:'',sosY:''});
@@ -1167,8 +1206,10 @@ const App=()=>{
 
     const[mF,setMF]=useState({id:null,subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi',source:'',image:'',resolved:false});
     const[tI,setTI]=useState({text:'',subject:'matematik',priority:'medium'});
+    const[clock,setClock]=useState(Date.now());
 
-    const today=td();
+    const todayObj=new Date(clock);
+    const today=ymd(todayObj);
 
     // Persist
     useEffect(()=>{S.s('sessions',sessions)},[sessions]);
@@ -1183,6 +1224,7 @@ const App=()=>{
     useEffect(()=>{S.s('commanderName',commanderName)},[commanderName]);
     useEffect(()=>{S.s('weeklyPlan',weeklyPlan)},[weeklyPlan]);
     useEffect(()=>{S.s('flashcards',flashcards)},[flashcards]);
+    useEffect(()=>{const id=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(id)},[]);
 
     // Auto daily tasks
     useEffect(()=>{
@@ -1190,13 +1232,12 @@ const App=()=>{
             setTasks(p=>[...p,
                 {id:Date.now()+0,date:today,text:'TYT Türkçe – 20 soru',   subject:'turkce',   examType:'TYT',completed:false,xp:10,priority:'high'},
                 {id:Date.now()+1,date:today,text:'TYT Matematik – 20 soru',subject:'matematik',examType:'TYT',completed:false,xp:10,priority:'high'},
-                {id:Date.now()+2,date:today,text:'AYT Matematik – 20 soru',subject:'matematik',examType:'AYT',completed:false,xp:10,priority:'high'},
-                {id:Date.now()+3,date:today,text:'TYT Fen – 10 soru',       subject:'fizik',    examType:'TYT',completed:false,xp:8,priority:'medium'},
-                {id:Date.now()+4,date:today,text:'AYT Fizik – 10 soru',     subject:'fizik',    examType:'AYT',completed:false,xp:8,priority:'medium'},
-                {id:Date.now()+5,date:today,text:'Kara Defter Tekrarı',     subject:'genel',    examType:'TYT',completed:false,xp:15,priority:'low'},
+                {id:Date.now()+2,date:today,text:'TYT Fen – 10 soru',      subject:'fizik',    examType:'TYT',completed:false,xp:8,priority:'medium'},
+                {id:Date.now()+3,date:today,text:'TYT Sosyal – 10 soru',   subject:'tarih',    examType:'TYT',completed:false,xp:8,priority:'medium'},
+                {id:Date.now()+4,date:today,text:'Kara Defter Tekrarı',    subject:'genel',    examType:'TYT',completed:false,xp:15,priority:'low'},
             ]);
         }
-    },[]);// eslint-disable-line
+    },[today,tasks]);
 
     const streak=useMemo(()=>{
         let s=0;const now=new Date();
@@ -1226,6 +1267,12 @@ const App=()=>{
     const tytQ=useMemo(()=>tSess.filter(s=>isTYT(s)).reduce((a,s)=>a+qInt(s),0),[tSess]);
     const aytQ=useMemo(()=>tSess.filter(s=>isAYT(s)).reduce((a,s)=>a+qInt(s),0),[tSess]);
     const tMins=useMemo(()=>tSess.reduce((a,s)=>a+dInt(s),0),[tSess]);
+    const tytDayMap=useMemo(()=>({
+        turkce:tSess.filter(s=>isTYT(s)&&s.subject==='turkce').reduce((a,s)=>a+qInt(s),0),
+        matematik:tSess.filter(s=>isTYT(s)&&s.subject==='matematik').reduce((a,s)=>a+qInt(s),0),
+        fen:tSess.filter(s=>isTYT(s)&&['fizik','kimya','biyoloji'].includes(s.subject)).reduce((a,s)=>a+qInt(s),0),
+        sosyal:tSess.filter(s=>isTYT(s)&&['tarih','cografya','felsefe','din'].includes(s.subject)).reduce((a,s)=>a+qInt(s),0)
+    }),[tSess]);
     const tTasks=useMemo(()=>tasks.filter(t=>t.date===today),[tasks,today]);
     const tDone=useMemo(()=>tTasks.filter(t=>t.completed).length,[tTasks]);
     const lvl=useMemo(()=>gl(xp),[xp]);
@@ -1291,15 +1338,116 @@ const App=()=>{
     const weekExams=useMemo(()=>exams.filter(e=>weekRange.includes(e.date)),[exams,weekRange]);
     const weekQuestions=useMemo(()=>weekSessions.reduce((a,s)=>a+qInt(s),0),[weekSessions]);
     const weekMinutes=useMemo(()=>weekSessions.reduce((a,s)=>a+dInt(s),0),[weekSessions]);
-    const weeklyDistTotal=useMemo(()=>SUBS.reduce((a,s)=>a+iVal((weeklyPlan.dist||{})[s.id]),0),[weeklyPlan]);
-    const weeklyRows=useMemo(()=>SUBS.map(s=>{
+    const weeklyDistTotal=useMemo(()=>SUBS.filter(s=>TYT_CAMP_SUBJECTS.includes(s.id)).reduce((a,s)=>a+iVal((weeklyPlan.dist||{})[s.id]),0),[weeklyPlan]);
+    const weeklyRows=useMemo(()=>SUBS.filter(s=>TYT_CAMP_SUBJECTS.includes(s.id)).map(s=>{
         const pct=iVal((weeklyPlan.dist||{})[s.id]);
         const targetQ=Math.round((iVal(weeklyPlan.questions)*pct)/100);
-        const subjectSessions=weekSessions.filter(x=>x.subject===s.id);
+        const subjectSessions=weekSessions.filter(x=>isTYT(x)&&x.subject===s.id);
         const actualQ=subjectSessions.reduce((a,x)=>a+qInt(x),0);
         const actualM=subjectSessions.reduce((a,x)=>a+dInt(x),0);
         return{...s,pct,targetQ,actualQ,actualM,remaining:Math.max(0,targetQ-actualQ)};
     }).filter(r=>r.pct>0||r.actualQ>0),[weeklyPlan,weekSessions]);
+    const dayIdx=todayObj.getDay();
+    const isWeekday=dayIdx>=1&&dayIdx<=5;
+    const isFriday=dayIdx===5;
+    const campTimeline=useMemo(()=>isWeekday?CAMP_TIMELINE(isFriday):[],[isWeekday,isFriday]);
+    const campWindows=useMemo(()=>campTimeline.filter(x=>x.type==='camp'),[campTimeline]);
+    const campWindowLabels=useMemo(()=>campWindows.map(x=>x.label),[campWindows]);
+    const isCampTagged=(s,label)=>((s.campSlot&&s.campSlot===label)||(!s.campSlot&&s.source===label));
+    const campDaySessions=useMemo(()=>sessions.filter(s=>s.date===today&&campWindowLabels.some(label=>isCampTagged(s,label))),[sessions,today,campWindowLabels]);
+    const campSubjectStats=useMemo(()=>weeklyRows.map(r=>{
+        const todaySessions=tSess.filter(s=>isTYT(s)&&s.subject===r.id);
+        const todayQ=todaySessions.reduce((a,s)=>a+qInt(s),0);
+        const openMistakes=mistakes.filter(m=>m.subject===r.id&&!(m.resolved||m.closed)).length;
+        const lastCamp=campDaySessions.filter(s=>s.subject===r.id).slice(-1)[0]||null;
+        const score=(r.remaining*1.8)+(openMistakes*8)+(todayQ===0?10:0)+(r.actualQ<r.targetQ?6:0);
+        const reasons=[];
+        if(r.remaining>0)reasons.push(`haftalık hedefte ${r.remaining} soru açık`);
+        if(todayQ===0)reasons.push('bugün henüz çalışılmadı');
+        if(openMistakes>0)reasons.push(`${openMistakes} açık hata var`);
+        return{...r,todayQ,openMistakes,lastCamp,score,reasons};
+    }).sort((a,b)=>b.score-a.score),[weeklyRows,tSess,mistakes,campDaySessions]);
+    const nowMin=todayObj.getHours()*60+todayObj.getMinutes();
+    const currentCampBlock=useMemo(()=>campTimeline.find(x=>nowMin>=toMin(x.start)&&nowMin<toMin(x.end))||null,[campTimeline,nowMin]);
+    const nextCampBlock=useMemo(()=>campTimeline.find(x=>toMin(x.start)>nowMin)||null,[campTimeline,nowMin]);
+    const campPlan=useMemo(()=>{
+        const ranked=[...campSubjectStats];
+        if(!ranked.length)return campWindows.map(slot=>({slot,subject:null,suggestedQ:0,done:false,reason:'Plan için ders dağılımı gir.'}));
+        return campWindows.map((slot,i)=>{
+            const subject=ranked[i%ranked.length];
+            const openSlots=Math.max(1,campWindows.length-i);
+            const suggestedQ=subject?Math.max(10,Math.round(subject.remaining/openSlots)||Math.round(subject.targetQ/4)||10):0;
+            const existing=sessions.find(s=>s.date===today&&isCampTagged(s,slot.label));
+            const done=!!existing;
+            const reason=subject?subject.reasons.slice(0,2).join(' · '):'Plan verisi yok';
+            const actualQ=existing?qInt(existing):0;
+            const actualM=existing?dInt(existing):0;
+            const efficiency=done?Math.max(0,Math.min(100,Math.round((actualQ/Math.max(suggestedQ,1))*70 + (actualM/Math.max(slot.minutes||50,1))*20 + ((existing.topic||'').trim()?10:0)))):0;
+            return{slot,subject,suggestedQ,done,existing,reason,actualQ,actualM,efficiency};
+        });
+    },[campSubjectStats,campWindows,sessions,today]);
+    const tyt120Rows=useMemo(()=>[
+        {id:'turkce',label:'Türkçe',value:tytDayMap.turkce,max:40,color:'#29b6f6'},
+        {id:'matematik',label:'Matematik',value:tytDayMap.matematik,max:40,color:'#6c63ff'},
+        {id:'fen',label:'Fen',value:tytDayMap.fen,max:20,color:'#00c853'},
+        {id:'sosyal',label:'Sosyal',value:tytDayMap.sosyal,max:20,color:'#ff9800'}
+    ],[tytDayMap]);
+    const distributionWarnings=useMemo(()=>{
+        const rows=[...tyt120Rows];
+        const total=rows.reduce((a,r)=>a+r.value,0);
+        const notes=[];
+        if(total===0)return notes;
+        if(rows.find(r=>r.id==='fen')?.value===0&&total>=40)notes.push('Bugün Fen tarafı boş kaldı. TYT kampında fen tamamen kaymamalı.');
+        if(rows.find(r=>r.id==='sosyal')?.value===0&&total>=40)notes.push('Bugün Sosyal tarafı boş kaldı. En az kısa bir sosyal bloğu açman iyi olur.');
+        const dominant=[...rows].sort((a,b)=>b.value-a.value)[0];
+        if(dominant&&dominant.value/Math.max(total,1)>=0.58)notes.push(`Bugünkü yük ${dominant.label} tarafına fazla yığılmış görünüyor.`);
+        const untouched=rows.filter(r=>r.value===0).map(r=>r.label);
+        if(untouched.length>=2&&total>=50)notes.push(`Denge bozuluyor: ${untouched.join(', ')} bugün hiç çalışılmamış.`);
+        return notes.slice(0,3);
+    },[tyt120Rows]);
+    const openTytMistakes=useMemo(()=>mistakes.filter(m=>TYT_CAMP_SUBJECTS.includes(m.subject)&&!(m.resolved||m.closed)).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6),[mistakes]);
+    const sourceAnalytics=useMemo(()=>{
+        const map={};
+        const ensure=name=>{const key=srcName(name);if(!map[key])map[key]={name:key,questions:0,minutes:0,sessions:0,examCount:0,normSum:0,mistakes:0,openMistakes:0,tytExamCount:0,aytExamCount:0};return map[key]};
+        sessions.forEach(s=>{if(!s.source||campWindowLabels.includes(s.source))return;const row=ensure(s.source);row.questions+=qInt(s);row.minutes+=dInt(s);row.sessions+=1;});
+        exams.forEach(e=>{const row=ensure(e.source||e.title);row.examCount+=1;const max=(e.examType==='AYT'?80:120);row.normSum+=max>0?((e.tot||0)/max)*100:0;if(e.examType==='AYT')row.aytExamCount+=1;else row.tytExamCount+=1;});
+        mistakes.forEach(m=>{if(!m.source||campWindowLabels.includes(m.source))return;const row=ensure(m.source);row.mistakes+=1;if(!(m.resolved||m.closed))row.openMistakes+=1;});
+        return Object.values(map).map(r=>{const avgNorm=r.examCount?Math.round((r.normSum/r.examCount)*10)/10:null;return {...r,avgNorm,score:r.questions+r.minutes*0.3+r.examCount*25-r.openMistakes*6}}).sort((a,b)=>b.score-a.score);
+    },[sessions,exams,mistakes,campWindowLabels]);
+    const bestSource=sourceAnalytics[0]||null;
+    const blockScores=useMemo(()=>campPlan.map(x=>({label:x.slot.label,score:x.efficiency,done:x.done,subject:x.subject?.name||'—'})),[campPlan]);
+    const campDebrief=useMemo(()=>{
+        const completed=campPlan.filter(x=>x.done).length;
+        const total=campPlan.length;
+        const totalQ=campDaySessions.reduce((a,s)=>a+qInt(s),0);
+        const totalM=campDaySessions.reduce((a,s)=>a+dInt(s),0);
+        const missed=campPlan.filter(x=>!x.done).map(x=>x.slot.label);
+        const strongest=campPlan.filter(x=>x.done).sort((a,b)=>b.efficiency-a.efficiency)[0]||null;
+        const tomorrowFirst=campSubjectStats[0]?{...campSubjectStats[0],source:bestSource?.name||''}:null;
+        return{completed,total,totalQ,totalM,missed,strongest,tomorrowFirst};
+    },[campPlan,campDaySessions,campSubjectStats,bestSource]);
+    const openCampSession=useCallback((slotPlan)=>{
+        if(!slotPlan)return;
+        const existing=sessions.find(s=>s.date===today&&isCampTagged(s,slotPlan.slot.label));
+        if(existing){
+            const sourceVal=(!existing.campSlot&&campWindowLabels.includes(existing.source))?'':(existing.source||'');
+            setSF({
+                id:existing.id,
+                subject:existing.subject||slotPlan.subject?.id||'matematik',
+                topic:existing.topic||'',
+                qc:String(qInt(existing)),
+                dur:String(dInt(existing)||slotPlan.slot.minutes||50),
+                examType:'TYT',
+                source:sourceVal,
+                campSlot:slotPlan.slot.label,
+                correct:existing.correct||'',
+                wrong:existing.wrong||''
+            });
+        }else{
+            setSF({id:null,examType:'TYT',subject:slotPlan.subject?.id||'matematik',topic:'',dur:String(slotPlan.slot.minutes||50),qc:String(slotPlan.suggestedQ||''),source:'',campSlot:slotPlan.slot.label,correct:'',wrong:''});
+        }
+        setModal({open:true,type:'session'});
+    },[sessions,today,campWindowLabels]);
 
     const mistakeDNA=useMemo(()=>{
         const total=mistakes.length;
@@ -1322,15 +1470,6 @@ const App=()=>{
         const zone=risk>=45?{l:'Kritik',c:'#ff5252',bg:'rgba(255,82,82,.1)'}:risk>=28?{l:'Sisli',c:'#ff9800',bg:'rgba(255,152,0,.1)'}:risk>=15?{l:'Dikkat',c:'#ffd600',bg:'rgba(255,214,0,.1)'}:{l:'Stabil',c:'#00c853',bg:'rgba(0,200,83,.1)'};
         return{...s,zone};
     }),[subjectIntel]);
-
-    const sourceAnalytics=useMemo(()=>{
-        const map={};
-        const ensure=name=>{const key=srcName(name);if(!map[key])map[key]={name:key,questions:0,minutes:0,sessions:0,examCount:0,netSum:0,bestNet:0,mistakes:0,openMistakes:0};return map[key]};
-        sessions.forEach(s=>{const row=ensure(s.source);row.questions+=qInt(s);row.minutes+=dInt(s);row.sessions+=1;});
-        exams.forEach(e=>{const row=ensure(e.source||e.title);row.examCount+=1;row.netSum+=(e.tot||0);row.bestNet=Math.max(row.bestNet,e.tot||0);});
-        mistakes.forEach(m=>{const row=ensure(m.source);row.mistakes+=1;if(!(m.resolved||m.closed))row.openMistakes+=1;});
-        return Object.values(map).map(r=>({...r,avgNet:r.examCount?Math.round((r.netSum/r.examCount)*10)/10:null,score:r.questions+r.minutes*0.3+r.examCount*25-r.openMistakes*6})).sort((a,b)=>b.score-a.score);
-    },[sessions,exams,mistakes]);
 
     // TYT net preview
     const tytNet=useMemo(()=>{
@@ -1409,11 +1548,24 @@ const App=()=>{
         const dur=iVal(sF.dur),q=iVal(sF.qc);
         if(dur<1||dur>600){notify('⚠️ Süre 1-600 dk olmalı');return}
         if(q>500){notify('⚠️ Soru sayısı çok yüksek');return}
+        const finalExamType=sF.campSlot?'TYT':(sF.examType||'TYT');
         const b=q>=80?50:q>=40?20:q>0?5:3;
-        setSessions(p=>[...p,{...sF,source:(sF.source||'').trim(),id:Date.now(),date:today,duration:dur.toString(),questionCount:q.toString(),dur:dur.toString(),qc:q.toString()}]);
-        addXp(b);setSF(p=>({...p,topic:'',qc:'',dur:'',source:'',correct:'',wrong:''}));
-        notify(`✅ ${sF.examType} oturumu kaydedildi! +${b} XP`);closeMd();
-    },[sF,today,addXp,notify,closeMd]);
+        const payload={...sF,examType:finalExamType,source:(sF.source||'').trim(),campSlot:(sF.campSlot||'').trim(),date:today,duration:dur.toString(),questionCount:q.toString(),dur:dur.toString(),qc:q.toString()};
+        const existingCamp=sF.campSlot?sessions.find(x=>x.date===today&&x.id!==sF.id&&isCampTagged(x,sF.campSlot)):null;
+        if(sF.id){
+            setSessions(p=>p.map(x=>x.id===sF.id?{...x,...payload}:x));
+            setSF({id:null,subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',campSlot:'',correct:'',wrong:''});
+            notify('✅ Oturum güncellendi!');closeMd();return;
+        }
+        if(existingCamp){
+            setSessions(p=>p.map(x=>x.id===existingCamp.id?{...x,...payload,id:existingCamp.id}:x));
+            setSF({id:null,subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',campSlot:'',correct:'',wrong:''});
+            notify('✅ Aynı kamp bloğu güncellendi!');closeMd();return;
+        }
+        setSessions(p=>[...p,{...payload,id:Date.now()}]);
+        addXp(b);setSF({id:null,subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',campSlot:'',correct:'',wrong:''});
+        notify(`✅ ${finalExamType} oturumu kaydedildi! +${b} XP`);closeMd();
+    },[sF,sessions,today,addXp,notify,closeMd]);
 
     const addSessionFromTimer=useCallback(data=>{
         setSessions(p=>[...p,{...data,source:data.source||'Zamanlayıcı',id:Date.now(),date:today,questionCount:data.qc}]);
@@ -1509,6 +1661,127 @@ const App=()=>{
                     </div>
                 </div>
             </div>
+
+            <Card title="🏫 TYT Kamp Akışı" subtitle="Telefonu az kullanacağın şekilde mevcut blok, sıradaki blok ve etüt önerileri" action={isWeekday&&currentCampBlock&&currentCampBlock.type==='camp'?<Btn onClick={()=>openCampSession(campPlan.find(x=>x.slot.id===currentCampBlock.id))} s="sm">Bu Etütü Kaydet</Btn>:null} className="camp-panel">
+                {!isWeekday?<div style={{fontSize:'13px',color:'#6b7280'}}>Hafta sonu için kamp akışı tanımlı değil. Şimdilik sistem sadece hafta içi TYT kamp düzenine göre çalışıyor.</div>:<>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'12px'}}>
+                        <div className="soft-card" style={{padding:'12px'}}>
+                            <div style={{fontSize:'11px',color:'#6b7280',marginBottom:'4px'}}>Şu an</div>
+                            <div style={{fontSize:'16px',fontWeight:'700',color:'#fff'}}>{currentCampBlock?currentCampBlock.label:'Blok dışında'}</div>
+                            <div style={{fontSize:'11px',color:'#9ca3af',marginTop:'4px'}}>{currentCampBlock?`${currentCampBlock.start} - ${currentCampBlock.end}`:'Şu an serbest zaman veya tanımsız aralık.'}</div>
+                            {currentCampBlock?.note&&<div style={{fontSize:'11px',color:'#ff9800',marginTop:'6px'}}>{currentCampBlock.note}</div>}
+                        </div>
+                        <div className="soft-card" style={{padding:'12px'}}>
+                            <div style={{fontSize:'11px',color:'#6b7280',marginBottom:'4px'}}>Sıradaki</div>
+                            <div style={{fontSize:'16px',fontWeight:'700',color:'#fff'}}>{nextCampBlock?nextCampBlock.label:'Bugün bitti'}</div>
+                            <div style={{fontSize:'11px',color:'#9ca3af',marginTop:'4px'}}>{nextCampBlock?`${nextCampBlock.start} - ${nextCampBlock.end}`:'Yeni blok yok.'}</div>
+                            {nextCampBlock?.type==='camp'&&campPlan.find(x=>x.slot.id===nextCampBlock.id)?.subject&&<div style={{fontSize:'11px',color:campPlan.find(x=>x.slot.id===nextCampBlock.id)?.subject?.color,marginTop:'6px'}}>Öneri: {campPlan.find(x=>x.slot.id===nextCampBlock.id)?.subject?.name}</div>}
+                            {nextCampBlock?.type==='camp'&&campPlan.find(x=>x.slot.id===nextCampBlock.id)?.reason&&<div style={{fontSize:'10px',color:'#6b7280',marginTop:'4px'}}>{campPlan.find(x=>x.slot.id===nextCampBlock.id)?.reason}</div>}
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        {campPlan.map((row,i)=><div key={row.slot.id} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',gap:'10px',borderLeft:`3px solid ${row.done?'#00c853':'#6c63ff'}`}}>
+                            <div style={{flex:1}}>
+                                <div style={{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap',marginBottom:'4px'}}>
+                                    <span style={{fontSize:'12px',fontWeight:'700',color:'#fff'}}>{row.slot.label}</span>
+                                    <span style={{fontSize:'11px',color:'#9ca3af'}}>{row.slot.start} - {row.slot.end}</span>
+                                    {row.done&&<span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'999px',backgroundColor:'rgba(0,200,83,.12)',color:'#00c853'}}>Kaydedildi</span>}
+                                </div>
+                                <div style={{fontSize:'12px',color:row.subject?.color||'#9ca3af'}}>{row.subject?`${row.subject.icon} ${row.subject.name}`:'Ders önerisi yok'}</div>
+                                <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Öneri: yaklaşık {row.suggestedQ} soru · kaynak ve konu seçip hızlıca kaydedebilirsin</div>
+                                {row.reason&&<div style={{fontSize:'10px',color:'#4b5563',marginTop:'4px'}}>{row.reason}</div>}
+                            </div>
+                            <Btn onClick={()=>openCampSession(row)} s="sm" v={row.done?'ghost':'primary'}>{row.done?'Güncelle':'Aç'}</Btn>
+                        </div>)}
+                    </div>
+                </>}
+            </Card>
+
+            <Card title="🧭 Mini Kamp Rehberi" subtitle="Uygulamayı en verimli şekilde kullanmak için kısa akış" className="camp-panel">
+                <div className="guide-grid">
+                    <div className="guide-step">
+                        <div className="k">1 · Sabah</div>
+                        <div className="t">Sadece bugüne bak</div>
+                        <div className="d">Kamp akışında şu anki blok ve sıradaki etüt önerisine göz at. Uzun uzun gezinme yapma.</div>
+                    </div>
+                    <div className="guide-step">
+                        <div className="k">2 · Etüt Öncesi</div>
+                        <div className="t">Bloku aç</div>
+                        <div className="d">Etüt kartındaki <b>Aç</b> butonuna bas. Ders, süre ve blok otomatik gelsin; sen konu ve kaynağı netleştir.</div>
+                    </div>
+                    <div className="guide-step">
+                        <div className="k">3 · Etüt Sonrası</div>
+                        <div className="t">20 saniyede kaydet</div>
+                        <div className="d">Soru sayısını ve konuyu gir. Hata çıktıysa Kara Defter’e en az 1 kısa kayıt düş. Telefonu tekrar kapat.</div>
+                    </div>
+                    <div className="guide-step">
+                        <div className="k">4 · Gece</div>
+                        <div className="t">Gün sonunu kontrol et</div>
+                        <div className="d">Gün Sonu Özeti’nden boş geçen etütleri, yarın ilk blok önerisini ve TYT 120 dağılımını kontrol et.</div>
+                    </div>
+                </div>
+                <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginTop:'12px'}}>
+                    <span className="guide-chip">Az telefon kullan</span>
+                    <span className="guide-chip">Her etütte küçük kayıt</span>
+                    <span className="guide-chip">TYT 120 dengesini koru</span>
+                    <span className="guide-chip">Açık hatayı taşıma</span>
+                </div>
+            </Card>
+
+            <Card title="🌙 Gün Sonu Özeti" subtitle="Etüt bloklarının kısa değerlendirmesi ve yarın ilk öneri" className="camp-panel">
+                {!isWeekday?<div style={{fontSize:'13px',color:'#6b7280'}}>Hafta sonu için şu an kamp debrief'i üretilmiyor.</div>:<>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'12px'}}>
+                        {[{l:'Tamamlanan Blok',v:`${campDebrief.completed}/${campDebrief.total}`,c:'#6c63ff'},{l:'TYT Soru',v:campDebrief.totalQ,c:'#00c853'},{l:'Süre',v:`${campDebrief.totalM} dk`,c:'#ffd600'},{l:'Kalan Blok',v:campDebrief.missed.length,c:'#ff9800'}].map((x,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'16px',fontWeight:'700',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></div>)}
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                        <div style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'12px'}}>
+                            <div style={{fontSize:'12px',fontWeight:'700',color:'#fff',marginBottom:'6px'}}>Bugün ne oldu?</div>
+                            {campDebrief.strongest?<div style={{fontSize:'12px',color:'#9ca3af'}}>En verimli blok: <span style={{color:'#fff'}}>{campDebrief.strongest.slot.label}</span> · {campDebrief.strongest.actualQ} soru · {campDebrief.strongest.subject?.name||'—'} · skor {campDebrief.strongest.efficiency}/100</div>:<div style={{fontSize:'12px',color:'#6b7280'}}>Bugün etüt kaydı yok.</div>}
+                            {!!campDebrief.missed.length&&<div style={{fontSize:'12px',color:'#ff9800',marginTop:'8px'}}>Boş geçen bloklar: {campDebrief.missed.join(', ')}</div>}
+                            {!campDebrief.missed.length&&campDebrief.total>0&&<div style={{fontSize:'12px',color:'#00c853',marginTop:'8px'}}>Bugünkü tüm etüt blokları kullanılmış görünüyor.</div>}
+                        </div>
+                        <div style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'12px'}}>
+                            <div style={{fontSize:'12px',fontWeight:'700',color:'#fff',marginBottom:'6px'}}>Yarın ilk blok önerisi</div>
+                            {campDebrief.tomorrowFirst?<><div style={{fontSize:'14px',fontWeight:'700',color:campDebrief.tomorrowFirst.color}}>{campDebrief.tomorrowFirst.icon} {campDebrief.tomorrowFirst.name}</div><div style={{fontSize:'12px',color:'#9ca3af',marginTop:'4px'}}>Öncelik nedeni: {campDebrief.tomorrowFirst.reasons.slice(0,2).join(' · ')||'haftalık hedef geride'}</div>{campDebrief.tomorrowFirst.source&&<div style={{fontSize:'11px',color:'#6b7280',marginTop:'6px'}}>Önerilen kaynak: {campDebrief.tomorrowFirst.source}</div>}</>:<div style={{fontSize:'12px',color:'#6b7280'}}>Yarın için öneri üretmek adına haftalık TYT planını doldur.</div>}
+                        </div>
+                    </div>
+                </>}
+            </Card>
+
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                <Card title="📚 Kaynak Verim Özeti" subtitle="Kamp dışında kullandığın kaynakların bugünkü/son dönem etkisi" className="camp-panel">
+                    {!bestSource?<div style={{fontSize:'13px',color:'#6b7280'}}>Kaynak adı girdikçe burada en verimli kaynak öne çıkacak.</div>:<>
+                        <div style={{fontSize:'15px',fontWeight:'700',color:'#fff'}}>{bestSource.name}</div>
+                        <div style={{display:'flex',gap:'10px',flexWrap:'wrap',fontSize:'11px',color:'#9ca3af',marginTop:'6px'}}><span>📝 {bestSource.questions} soru</span><span>⏱ {bestSource.minutes} dk</span><span>📊 {bestSource.examCount} deneme</span>{bestSource.avgNorm!==null&&<span>Ort. %{bestSource.avgNorm} net</span>}</div>
+                        <div style={{fontSize:'11px',color:bestSource.openMistakes?'#ff9800':'#00c853',marginTop:'8px'}}>{bestSource.openMistakes?`Açık hata taşıyor: ${bestSource.openMistakes}`:'Açık hata görünmüyor'}</div>
+                    </>}
+                </Card>
+                <Card title="📈 Blok Verim Skoru" subtitle="Bugünkü etüt bloklarında planlanan yük ne kadar çıktı üretti?" className="camp-panel">
+                    {!isWeekday?<div style={{fontSize:'13px',color:'#6b7280'}}>Hafta sonu için blok verim skoru hesaplanmıyor.</div>:<div className="space-y-2">{blockScores.map((b,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'8px 10px'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',marginBottom:'4px'}}><span style={{color:'#fff'}}>{b.label}</span><span style={{color:b.done?(b.score>=75?'#00c853':b.score>=45?'#ffd600':'#ff9800'):'#4b5563',fontWeight:'700'}}>{b.done?`${b.score}/100`:'boş'}</span></div>{b.done&&<PBar value={b.score} max={100} color={b.score>=75?'#00c853':b.score>=45?'#ffd600':'#ff9800'} label={false} size="sm"/>}<div style={{fontSize:'10px',color:'#6b7280',marginTop:'4px'}}>{b.subject}</div></div>)}</div>}
+                </Card>
+            </div>
+
+            <Card title="🧭 TYT 120 Haritası" subtitle="Bugünkü TYT yükünün 4 ana hatta dağılımı" className="camp-panel">
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                    {tyt120Rows.map(r=><div key={r.id} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px'}}>
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+                            <span style={{fontSize:'12px',fontWeight:'700',color:r.color}}>{r.label}</span>
+                            <span style={{fontSize:'11px',color:'#9ca3af'}}>{r.value}/{r.max}</span>
+                        </div>
+                        <PBar value={r.value} max={r.max} color={r.color} label={false} size="sm"/>
+                        <div style={{fontSize:'10px',color:'#6b7280',marginTop:'5px'}}>%{safePct(r.value,r.max)} tamamlandı</div>
+                    </div>)}
+                </div>
+                <div style={{fontSize:'11px',color:'#9ca3af',marginTop:'10px'}}>TYT kampı yalnız TYT alanlarını takip eder; toplam tavan 120 sorudur.</div>
+            </Card>
+
+            <Card title="🚨 Ders Dağılım Alarmı" subtitle="Bugünkü TYT dağılımında dengesizlik var mı?" className="camp-panel">
+                {distributionWarnings.length===0?<div style={{fontSize:'13px',color:'#00c853'}}>Bugünkü TYT dağılımında belirgin bir alarm görünmüyor.</div>:<div className="space-y-2">{distributionWarnings.map((w,i)=><div key={i} style={{backgroundColor:'rgba(255,152,0,.08)',border:'1px solid rgba(255,152,0,.18)',borderRadius:'10px',padding:'10px',fontSize:'12px',color:'#e5e7eb'}}>{w}</div>)}</div>}
+            </Card>
+
+            <Card title="📕 Açık Hata Kuyruğu" subtitle="TYT kampında kapanmayı bekleyen hatalar" className="camp-panel">
+                {openTytMistakes.length===0?<div style={{fontSize:'13px',color:'#6b7280'}}>Açık TYT hatası görünmüyor.</div>:<div className="space-y-2">{openTytMistakes.map(m=>{const sub=SUBS.find(s=>s.id===m.subject);return <div key={m.id} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px 12px',display:'flex',justifyContent:'space-between',gap:'10px',alignItems:'center'}}><div style={{flex:1}}><div style={{display:'flex',gap:'6px',flexWrap:'wrap',alignItems:'center',marginBottom:'4px'}}><span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',backgroundColor:sub?.color+'22',color:sub?.color,fontWeight:'600'}}>{sub?.name||m.subject}</span>{m.source&&<span style={{fontSize:'10px',color:'#9ca3af'}}>📚 {m.source}</span>}</div><div style={{fontSize:'13px',fontWeight:'600',color:'#fff'}}>{m.topic}</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>{fdf(m.date)}</div></div><Btn onClick={()=>openEditMistake(m)} v="ghost" s="sm">Aç</Btn></div>})}</div>}
+            </Card>
 
             {/* SR Alert */}
             {dueFC>0&&<div style={{backgroundColor:'rgba(255,214,0,.08)',border:'1px solid rgba(255,214,0,.3)',borderRadius:'14px',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}} onClick={()=>navTo('brainlab')}>
@@ -1650,7 +1923,7 @@ const App=()=>{
         return<div className="space-y-4">
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <h1 style={{fontSize:'20px',fontWeight:'bold',color:'#fff',margin:0}}>📚 Çalışma</h1>
-                <Btn onClick={()=>setModal({open:true,type:'session'})}>+ Ekle</Btn>
+                <Btn onClick={()=>{setSF({id:null,subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',campSlot:'',correct:'',wrong:''});setModal({open:true,type:'session'})}}>+ Ekle</Btn>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
                 <Card title="⏱️ Zamanlayıcı"><LiveTimer onSave={addSessionFromTimer} notify={notify}/></Card>
@@ -1689,7 +1962,7 @@ const App=()=>{
                                     <span style={{fontSize:'13px',color:'#fff',fontWeight:'500'}}>{s.topic}</span>
                                 </div>
                                 <div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#6b7280',flexWrap:'wrap'}}>
-                                    <span>📅{fd(s.date)}</span><span>⏱{dInt(s)}dk</span><span>📝{qInt(s)}</span>{s.source&&<span>📚 {s.source}</span>}
+                                    <span>📅{fd(s.date)}</span><span>⏱{dInt(s)}dk</span><span>📝{qInt(s)}</span>{s.source&&<span>📚 {s.source}</span>}{s.campSlot&&<span>🏫 {s.campSlot}</span>}
                                 </div>
                             </div>
                             <button onClick={()=>setSessions(p=>p.filter(x=>x.id!==s.id))} style={{color:'#4b5563',background:'none',border:'none',cursor:'pointer',fontSize:'17px'}} onMouseOver={e=>e.target.style.color='#ff5252'} onMouseOut={e=>e.target.style.color='#4b5563'}>×</button>
@@ -1813,6 +2086,12 @@ const App=()=>{
                             {/* AYT EA */}
                             {e.examType==='AYT'&&e.field==='ea'&&<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px'}}>
                                 {[{l:'Edb.',v:e.eN},{l:'Mat',v:e.mN},{l:'Tar',v:e.tN},{l:'Coğ',v:e.cN}].map(x=><div key={x.l} style={{backgroundColor:'#0a0a0f',borderRadius:'8px',padding:'5px',textAlign:'center'}}>
+                                    <div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div>
+                                    <div style={{fontSize:'12px',fontWeight:'bold',color:'#fff'}}>{x.v?.toFixed(1)??'—'}</div>
+                                </div>)}
+                            </div>}
+                            {e.examType==='AYT'&&e.field==='sozel'&&<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px'}}>
+                                {[{l:'Edb',v:e.eN},{l:'T1',v:e.t1N},{l:'C1',v:e.c1N},{l:'T2',v:e.t2N},{l:'C2',v:e.c2N},{l:'Fel',v:e.felN},{l:'Din',v:e.dinN},{l:'Top',v:e.tot}].map(x=><div key={x.l} style={{backgroundColor:'#0a0a0f',borderRadius:'8px',padding:'5px',textAlign:'center'}}>
                                     <div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div>
                                     <div style={{fontSize:'12px',fontWeight:'bold',color:'#fff'}}>{x.v?.toFixed(1)??'—'}</div>
                                 </div>)}
@@ -1962,19 +2241,12 @@ const App=()=>{
             }),[sessions,mistakes]);
             const recentSeries=useMemo(()=>{
                 const tyt=[...exams].filter(e=>!e.examType||e.examType==='TYT').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(-10).map(e=>({label:fd(e.date),value:e.tot||0}));
-                const ayt=[...exams].filter(e=>e.examType==='AYT').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(-10).map(e=>({label:fd(e.date),value:e.tot||0}));
-                return{tyt,ayt};
+                return{tyt};
             },[exams]);
-            const examLabels=useMemo(()=>{const max=Math.max(recentSeries.tyt.length,recentSeries.ayt.length);return Array.from({length:max},(_,i)=>recentSeries.tyt[i]?.label||recentSeries.ayt[i]?.label||String(i+1))},[recentSeries]);
             const tytSectionTrend=useMemo(()=>{
                 const list=[...exams].filter(e=>!e.examType||e.examType==='TYT').sort((a,b)=>new Date(a.date)-new Date(b.date));
                 const mk=(key,label,color)=>{const vals=list.map(e=>e[key]||0);const recent=avg(vals.slice(-3));const prev=avg(vals.slice(-6,-3).length?vals.slice(-6,-3):vals.slice(0,-3));return{label,color,recent,prev,delta:Math.round((recent-prev)*10)/10}};
                 return [mk('tN','Türkçe','#29b6f6'),mk('mN','Matematik','#6c63ff'),mk('fN','Fen','#00c853'),mk('sN','Sosyal','#ff9800')];
-            },[exams]);
-            const aytSectionTrend=useMemo(()=>{
-                const list=[...exams].filter(e=>e.examType==='AYT').sort((a,b)=>new Date(a.date)-new Date(b.date));
-                const mk=(getVals,label,color)=>{const vals=list.map(getVals).filter(v=>v!==null&&v!==undefined);const recent=avg(vals.slice(-3));const prev=avg(vals.slice(-6,-3).length?vals.slice(-6,-3):vals.slice(0,-3));return{label,color,recent,prev,delta:Math.round((recent-prev)*10)/10}};
-                return [mk(e=>e.mN,'Matematik','#6c63ff'),mk(e=>e.fN,'Fizik','#00c853'),mk(e=>e.kN,'Kimya','#ffd600'),mk(e=>e.bN,'Biyoloji','#ff5252'),mk(e=>e.eN,'Edebiyat','#29b6f6'),mk(e=>e.tN||e.t1N,'Tarih','#ff9800'),mk(e=>e.cN||e.c1N,'Coğrafya','#e91e63')].filter(x=>!Number.isNaN(x.recent)||!Number.isNaN(x.prev));
             },[exams]);
             const wrongAreas=useMemo(()=>{
                 const rows={};
@@ -1992,9 +2264,9 @@ const App=()=>{
             useEffect(()=>{
                 if(!examRef.current)return;
                 if(examCI.current){examCI.current.destroy();examCI.current=null}
-                examCI.current=new Chart(examRef.current,{type:'line',data:{labels:examLabels,datasets:[{label:'TYT',data:recentSeries.tyt.map(x=>x.value),borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.15)',fill:false,tension:.35},{label:'AYT',data:recentSeries.ayt.map(x=>x.value),borderColor:'#ff9800',backgroundColor:'rgba(255,152,0,.15)',fill:false,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{y:{ticks:{color:'#6b7280'},grid:{color:'#1a1a2e'}},x:{ticks:{color:'#6b7280'},grid:{display:false}}}}});
+                examCI.current=new Chart(examRef.current,{type:'line',data:{labels:recentSeries.tyt.map(x=>x.label),datasets:[{label:'TYT',data:recentSeries.tyt.map(x=>x.value),borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.15)',fill:false,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{y:{beginAtZero:true,max:120,ticks:{color:'#6b7280'},grid:{color:'#1a1a2e'}},x:{ticks:{color:'#6b7280'},grid:{display:false}}}}});
                 return()=>{if(examCI.current){examCI.current.destroy();examCI.current=null}};
-            },[recentSeries,examLabels]);
+            },[recentSeries]);
             useEffect(()=>{
                 if(!sourceRef.current)return;
                 if(sourceCI.current){sourceCI.current.destroy();sourceCI.current=null}
@@ -2008,9 +2280,9 @@ const App=()=>{
                     {[{v:sessions.reduce((a,s)=>a+qInt(s),0).toLocaleString(),l:'Toplam Soru',c:'#6c63ff',i:'📝'},{v:`${Math.round(sessions.reduce((a,s)=>a+dInt(s),0)/60)}s`,l:'Toplam Süre',c:'#00c853',i:'⏱️'},{v:exams.filter(e=>isTYT(e)).length,l:'TYT Deneme',c:'#6c63ff',i:'📊'},{v:exams.filter(e=>isAYT(e)).length,l:'AYT Deneme',c:'#ff9800',i:'📊'}].map((x,i)=><Card key={i} style={{padding:'12px'}}><div style={{fontSize:'18px',marginBottom:'2px'}}>{x.i}</div><div style={{fontSize:'18px',fontWeight:'bold',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></Card>)}
                 </div>
 
-                <Card title="🧪 Deneme Analiz Merkezi" subtitle="Son 10 deneme, ders bazlı değişim ve yanlış yoğunluğu">
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'12px'}}>
-                        {[{l:'TYT Ort.',v:exams.filter(e=>!e.examType||e.examType==='TYT').length?(exams.filter(e=>!e.examType||e.examType==='TYT').reduce((a,e)=>a+(e.tot||0),0)/exams.filter(e=>!e.examType||e.examType==='TYT').length).toFixed(1):'—',c:'#6c63ff'},{l:'TYT En İyi',v:exams.filter(e=>!e.examType||e.examType==='TYT').length?Math.max(...exams.filter(e=>!e.examType||e.examType==='TYT').map(e=>e.tot||0)).toFixed(1):'—',c:'#00c853'},{l:'AYT Ort.',v:exams.filter(e=>e.examType==='AYT').length?(exams.filter(e=>e.examType==='AYT').reduce((a,e)=>a+(e.tot||0),0)/exams.filter(e=>e.examType==='AYT').length).toFixed(1):'—',c:'#ff9800'},{l:'Son Trend',v:`${examTrend.delta>0?'+':''}${examTrend.delta}`,c:examTrend.color}].map((x,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'16px',fontWeight:'bold',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></div>)}
+                <Card title="🧪 Deneme Analiz Merkezi" subtitle="TYT kampı için son 10 TYT denemesi, ders bazlı değişim ve yanlış yoğunluğu">
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'12px'}}>
+                        {[{l:'TYT Ort.',v:exams.filter(e=>!e.examType||e.examType==='TYT').length?(exams.filter(e=>!e.examType||e.examType==='TYT').reduce((a,e)=>a+(e.tot||0),0)/exams.filter(e=>!e.examType||e.examType==='TYT').length).toFixed(1):'—',c:'#6c63ff'},{l:'TYT En İyi',v:exams.filter(e=>!e.examType||e.examType==='TYT').length?Math.max(...exams.filter(e=>!e.examType||e.examType==='TYT').map(e=>e.tot||0)).toFixed(1):'—',c:'#00c853'},{l:'Son Trend',v:`${examTrend.delta>0?'+':''}${examTrend.delta}`,c:examTrend.color}].map((x,i)=><div key={i} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'16px',fontWeight:'bold',color:x.c}}>{x.v}</div><div style={{fontSize:'11px',color:'#6b7280'}}>{x.l}</div></div>)}
                     </div>
                     <div style={{height:'220px',marginBottom:'12px'}}><canvas ref={examRef}/></div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
@@ -2020,7 +2292,7 @@ const App=()=>{
                         </div>
                         <div>
                             <div style={{fontSize:'12px',fontWeight:'700',color:'#9ca3af',marginBottom:'8px'}}>En Sık Yanlış Çıkan Alanlar</div>
-                            <div className="space-y-2">{wrongAreas.length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Yanlış verisi biriktikçe burada görünecek.</div>:wrongAreas.map(x=><div key={x.label} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'8px 10px'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}><span style={{color:'#e5e7eb'}}>{x.label}</span><span style={{color:'#ff5252'}}>{x.value} yanlış</span></div></div>)}</div>
+                            <div className="space-y-2">{wrongAreas.length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Yanlış verisi biriktikçe burada görünecek.</div>:wrongAreas.filter(x=>x.label.startsWith('TYT')).map(x=><div key={x.label} style={{backgroundColor:'#1a1a2e',borderRadius:'10px',padding:'8px 10px'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}><span style={{color:'#e5e7eb'}}>{x.label}</span><span style={{color:'#ff5252'}}>{x.value} yanlış</span></div></div>)}</div>
                         </div>
                     </div>
                 </Card>
@@ -2028,7 +2300,7 @@ const App=()=>{
                 <Card title="📚 Soru Kaynağı Takibi" subtitle="Hangi kaynağa ne kadar zaman gitti, hangisi verimli oldu?">
                     <div style={{height:'220px',marginBottom:'12px'}}><canvas ref={sourceRef}/></div>
                     {sourceAnalytics.length===0?<div style={{fontSize:'12px',color:'#6b7280'}}>Kaynak adı girmeye başladığında burada kaynak bazlı verim raporu çıkacak.</div>:
-                    <div className="space-y-2">{sourceAnalytics.slice(0,8).map(src=><div key={src.name} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px 12px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',flexWrap:'wrap',alignItems:'center'}}><div style={{fontSize:'13px',fontWeight:'700',color:'#fff'}}>{src.name}</div><div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#9ca3af',flexWrap:'wrap'}}><span>📝 {src.questions}</span><span>⏱ {src.minutes} dk</span><span>📊 {src.examCount} deneme</span>{src.avgNet!==null&&<span>Ort. net {src.avgNet}</span>}<span style={{color:src.openMistakes?'#ff5252':'#00c853'}}>❌ {src.openMistakes}/{src.mistakes}</span></div></div></div>)}</div>}
+                    <div className="space-y-2">{sourceAnalytics.slice(0,8).map(src=><div key={src.name} style={{backgroundColor:'#1a1a2e',borderRadius:'12px',padding:'10px 12px'}}><div style={{display:'flex',justifyContent:'space-between',gap:'8px',flexWrap:'wrap',alignItems:'center'}}><div style={{fontSize:'13px',fontWeight:'700',color:'#fff'}}>{src.name}</div><div style={{display:'flex',gap:'10px',fontSize:'11px',color:'#9ca3af',flexWrap:'wrap'}}><span>📝 {src.questions}</span><span>⏱ {src.minutes} dk</span><span>📊 {src.examCount} deneme</span>{src.avgNorm!==null&&<span>Ort. %{src.avgNorm} net</span>}<span style={{color:src.openMistakes?'#ff5252':'#00c853'}}>❌ {src.openMistakes}/{src.mistakes}</span></div></div></div>)}</div>}
                 </Card>
 
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
@@ -2074,7 +2346,14 @@ const App=()=>{
                     ))}
                 </div>
                 <div style={{textAlign:'center',marginTop:'10px',fontSize:'12px',color:'#6b7280'}}>📅 {fdf(examDate)}</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginTop:'12px'}}><Inp label="İsim" value={commanderName} onChange={setCommanderName} placeholder="Örn. Mehmet"/><Inp label="Sınav Tarihi" type="date" value={examDate} onChange={setExamDate}/></div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginTop:'12px'}}>
+                    <div>
+                        <label style={{display:'block',fontSize:'12px',color:'#6b7280',marginBottom:'4px'}}>İsim</label>
+                        <input defaultValue={commanderName} placeholder="Örn. Mehmet" onBlur={e=>setCommanderName(e.target.value.trim()||'Öğrenci')} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur()}}
+                            style={{width:'100%',borderRadius:'12px',padding:'8px 12px',fontSize:'14px',backgroundColor:'#0a0a0f',border:'1px solid #2a2a3e',color:'#e5e7eb',outline:'none'}} />
+                    </div>
+                    <Inp label="Sınav Tarihi" type="date" value={examDate} onChange={setExamDate}/>
+                </div>
             </Card>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
                 <Card style={{border:'1px solid rgba(108,99,255,.25)'}}>
@@ -2092,7 +2371,7 @@ const App=()=>{
                     <div style={{fontSize:'12px',color:'#6b7280',marginTop:'4px'}}>Bugün: {aytQ} · Min: 50</div>
                 </Card>
             </div>
-            <Card title="🗓️ Haftalık Planlayıcı" subtitle={`${fd(weekStart)} - ${fd(weekEnd)}`}>
+            <Card title="🗓️ Haftalık TYT Planlayıcı" subtitle={`${fd(weekStart)} - ${fd(weekEnd)} · Etüt bloklarına göre dağıtım`}>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
                     <Inp label="Haftalık soru" type="number" value={weeklyPlan.questions} onChange={v=>setWeeklyPlan(p=>({...p,questions:iVal(v)}))}/>
                     <Inp label="Haftalık dakika" type="number" value={weeklyPlan.minutes} onChange={v=>setWeeklyPlan(p=>({...p,minutes:iVal(v)}))}/>
@@ -2106,7 +2385,7 @@ const App=()=>{
                     <div style={{fontSize:'11px',color:weeklyDistTotal===100?'#00c853':'#ff9800'}}>Toplam %{weeklyDistTotal}</div>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
-                    {SUBS.map(s=><Inp key={s.id} label={`${s.icon} ${s.name}`} type="number" value={(weeklyPlan.dist||{})[s.id]||0} onChange={v=>setWeeklyPlan(p=>({...p,dist:{...(p.dist||{}),[s.id]:iVal(v)}}))} min="0"/>) }
+                    {SUBS.filter(s=>TYT_CAMP_SUBJECTS.includes(s.id)).map(s=><Inp key={s.id} label={`${s.icon} ${s.name}`} type="number" value={(weeklyPlan.dist||{})[s.id]||0} onChange={v=>setWeeklyPlan(p=>({...p,dist:{...(p.dist||{}),[s.id]:iVal(v)}}))} min="0"/>) }
                 </div>
                 <div style={{marginTop:'14px'}}>
                     <div style={{fontSize:'12px',fontWeight:'700',color:'#fff',marginBottom:'8px'}}>Haftalık gerçekleşen / kalan</div>
@@ -2201,10 +2480,10 @@ const App=()=>{
         </main>
 
         {/* MODAL: Session */}
-        <Modal isOpen={modal.open&&modal.type==='session'} onClose={closeMd} title="📚 Çalışma Oturumu Ekle">
+        <Modal isOpen={modal.open&&modal.type==='session'} onClose={()=>{setSF({id:null,subject:'matematik',topic:'',qc:'',dur:'',examType:'TYT',source:'',campSlot:'',correct:'',wrong:''});closeMd();}} title="📚 Çalışma Oturumu Ekle">
             <div className="space-y-3">
                 {/* TYT / AYT selector */}
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                {!sF.campSlot?<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
                     {['TYT','AYT'].map(t=><button key={t} onClick={()=>setSF(p=>({...p,examType:t}))}
                         style={{padding:'10px',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:'700',fontSize:'14px',
                             backgroundColor:sF.examType===t?(t==='TYT'?'rgba(108,99,255,.3)':'rgba(255,152,0,.3)'):'#1a1a2e',
@@ -2213,7 +2492,7 @@ const App=()=>{
                             borderColor:sF.examType===t?(t==='TYT'?'#6c63ff':'#ff9800'):'#2a2a3e'}}>
                         {t} {t==='TYT'?'(max 120 net)':'(max 80 net)'}
                     </button>)}
-                </div>
+                </div>:<div style={{backgroundColor:'rgba(108,99,255,.08)',border:'1px solid rgba(108,99,255,.2)',borderRadius:'12px',padding:'10px 12px',fontSize:'12px',color:'#cbd5e1'}}>Bu kayıt bir <span style={{color:'#fff',fontWeight:'700'}}>TYT kamp bloğu</span> olarak işlenir. Tür sabit: <span style={{color:'#6c63ff',fontWeight:'700'}}>TYT / max 120</span></div>}
                 <Sel label="Ders" value={sF.subject} onChange={v=>setSF(p=>({...p,subject:v}))} options={SUBS.map(s=>({value:s.id,label:`${s.icon} ${s.name}`}))}/>
                 <Inp label="Konu" value={sF.topic} onChange={v=>setSF(p=>({...p,topic:v}))} placeholder="Konu adı..."/>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
@@ -2221,10 +2500,12 @@ const App=()=>{
                     <Inp label="Soru Sayısı" type="number" value={sF.qc} onChange={v=>setSF(p=>({...p,qc:v}))} min="0"/>
                 </div>
                 <Inp label="Kaynak / Yayın" value={sF.source||''} onChange={v=>setSF(p=>({...p,source:v}))} placeholder="Örn. 345 / Bilgi Sarmal / Orijinal"/>
+                {!!sF.campSlot&&<div style={{backgroundColor:'rgba(108,99,255,.08)',border:'1px solid rgba(108,99,255,.25)',borderRadius:'10px',padding:'8px 12px',fontSize:'12px',color:'#9ca3af'}}>Bu kayıt TYT kamp etüt bloğu olarak işlenecek: <span style={{color:'#fff'}}>{sF.campSlot}</span></div>}
                 {sF.qc&&parseInt(sF.qc)>0&&<div style={{backgroundColor:'rgba(108,99,255,.1)',border:'1px solid rgba(108,99,255,.3)',borderRadius:'10px',padding:'8px 12px',fontSize:'12px',color:'#9ca3af',textAlign:'center'}}>
                     {sF.examType} Hedef: {sF.examType==='TYT'?`${parseInt(sF.qc)||0}/120`:`${parseInt(sF.qc)||0}/80`}
                 </div>}
-                <Btn onClick={addSession} style={{width:'100%',justifyContent:'center'}}>💾 Kaydet</Btn>
+                <Btn onClick={addSession} style={{width:'100%',justifyContent:'center'}}>{sF.id?'💾 Güncelle':'💾 Kaydet'}</Btn>
+                {!!sF.id&&<div style={{fontSize:'11px',color:'#6b7280',textAlign:'center'}}>Bu oturum mevcut kamp bloğu kaydı olarak güncellenecek.</div>}
             </div>
         </Modal>
 
