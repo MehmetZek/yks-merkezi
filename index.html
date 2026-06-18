@@ -6,6 +6,7 @@
     <title>YKS Merkezi // Komuta Üssü</title>
     <meta name="theme-color" content="#6c63ff">
     <meta name="description" content="YKS Merkezi // Komuta Üssü: TYT/AYT takip, operasyon planlama, analiz ve hafıza laboratuvarı">
+    <link rel="icon" type="image/png" href="./favicon-32x32.png">
     <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2437,8 +2438,13 @@ const App=()=>{
         {/* Desktop sidebar */}
         <div className="hidden md:flex" style={{position:'fixed',left:0,top:0,bottom:0,width:'192px',backgroundColor:'#12121a',borderRight:'1px solid #2a2a3e',flexDirection:'column',zIndex:40}}>
             <div style={{padding:'16px',borderBottom:'1px solid #2a2a3e'}}>
-                <div style={{fontSize:'18px',fontWeight:'bold',color:'#6c63ff'}}>⚡ YKS Merkezi</div>
-                <div style={{fontSize:'11px',color:'#4b5563',marginTop:'2px'}}>{commanderName}</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                    <img src="./branding/yks-logo-wordmark-v3.png" alt="YKS Merkezi" style={{width:'150px',height:'auto',display:'block'}}/>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                        <img src="./branding/yks-logo-icon-v3.png" alt="YKS logo" style={{width:'26px',height:'26px',borderRadius:'8px',boxShadow:'0 4px 16px rgba(108,99,255,.18)'}}/>
+                        <div style={{fontSize:'11px',color:'#4b5563'}}>{commanderName}</div>
+                    </div>
+                </div>
             </div>
             <div style={{flex:1,paddingTop:'8px',overflowY:'auto'}}>
                 {nav.map(n=>{const dot=n.id==='brainlab'&&dueFC>0;return(
@@ -2462,6 +2468,12 @@ const App=()=>{
                     <span className="ayt-badge" style={{borderRadius:'999px',padding:'1px 6px'}}>AYT {aytQ}/80</span>
                 </div>
             </div>
+        </div>
+
+        {/* Mobile top brand */}
+        <div className="md:hidden" style={{position:'sticky',top:0,backgroundColor:'rgba(18,18,26,.94)',backdropFilter:'blur(10px)',borderBottom:'1px solid #2a2a3e',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',zIndex:45}}>
+            <img src="./branding/yks-logo-wordmark-v3.png" alt="YKS Merkezi" style={{width:'132px',height:'auto',display:'block'}}/>
+            <img src="./branding/yks-logo-icon-v3.png" alt="YKS logo" style={{width:'28px',height:'28px',borderRadius:'8px',boxShadow:'0 4px 16px rgba(108,99,255,.18)'}}/>
         </div>
 
         {/* Mobile bottom nav */}
@@ -2686,5 +2698,5 @@ if('serviceWorker' in navigator){
     });
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0dc79f1fc3b1e0f',t:'MTc4MTgwODU5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
