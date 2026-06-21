@@ -6,9 +6,7 @@
     <title>YKS Merkezi // Komuta Üssü</title>
     <meta name="theme-color" content="#6c63ff">
     <meta name="description" content="YKS Merkezi // Komuta Üssü: TYT/AYT takip, operasyon planlama, analiz ve hafıza laboratuvarı">
-    <link rel="icon" type="image/png" href="./favicon-32x32.png?v=2">
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=2">
-    <link rel="manifest" href="./manifest.json?v=2">
+    <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{dark:{900:'#0a0a0f',800:'#12121a',700:'#1a1a2e',600:'#2a2a3e'}}}}}</script>
@@ -60,7 +58,7 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel">
+<script type="text/plain" id="app-code">
 const{useState,useEffect,useRef,useMemo,useCallback,memo}=React;
 
 const ymd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -2439,13 +2437,8 @@ const App=()=>{
         {/* Desktop sidebar */}
         <div className="hidden md:flex" style={{position:'fixed',left:0,top:0,bottom:0,width:'192px',backgroundColor:'#12121a',borderRight:'1px solid #2a2a3e',flexDirection:'column',zIndex:40}}>
             <div style={{padding:'16px',borderBottom:'1px solid #2a2a3e'}}>
-                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                    <img src="./branding/yks-logo-wordmark-v3-web.png?v=2" alt="YKS Merkezi" style={{width:'150px',height:'auto',display:'block'}}/>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                        <img src="./branding/yks-logo-icon-v3-web.png?v=2" alt="YKS logo" style={{width:'26px',height:'26px',borderRadius:'8px',boxShadow:'0 4px 16px rgba(108,99,255,.18)'}}/>
-                        <div style={{fontSize:'11px',color:'#4b5563'}}>{commanderName}</div>
-                    </div>
-                </div>
+                <div style={{fontSize:'18px',fontWeight:'bold',color:'#6c63ff'}}>⚡ YKS Merkezi</div>
+                <div style={{fontSize:'11px',color:'#4b5563',marginTop:'2px'}}>{commanderName}</div>
             </div>
             <div style={{flex:1,paddingTop:'8px',overflowY:'auto'}}>
                 {nav.map(n=>{const dot=n.id==='brainlab'&&dueFC>0;return(
@@ -2469,12 +2462,6 @@ const App=()=>{
                     <span className="ayt-badge" style={{borderRadius:'999px',padding:'1px 6px'}}>AYT {aytQ}/80</span>
                 </div>
             </div>
-        </div>
-
-        {/* Mobile top brand */}
-        <div className="md:hidden" style={{position:'sticky',top:0,backgroundColor:'rgba(18,18,26,.94)',backdropFilter:'blur(10px)',borderBottom:'1px solid #2a2a3e',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',zIndex:45}}>
-            <img src="./branding/yks-logo-wordmark-v3-web.png?v=2" alt="YKS Merkezi" style={{width:'132px',height:'auto',display:'block'}}/>
-            <img src="./branding/yks-logo-icon-v3-web.png?v=2" alt="YKS logo" style={{width:'28px',height:'28px',borderRadius:'8px',boxShadow:'0 4px 16px rgba(108,99,255,.18)'}}/>
         </div>
 
         {/* Mobile bottom nav */}
@@ -2699,6 +2686,20 @@ if('serviceWorker' in navigator){
     });
 }
 </script>
+<script>
+(function(){
+    const source=document.getElementById('app-code').textContent;
+    try{
+        const compiled=Babel.transform(source,{presets:[['react',{runtime:'classic'}]]}).code;
+        (0,eval)(compiled);
+    }catch(err){
+        console.error('APP_BOOT_ERROR',err);
+        const root=document.getElementById('root');
+        if(root){
+            root.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#0a0a0f;color:#e5e7eb;font-family:system-ui,sans-serif"><div style="max-width:560px;background:#12121a;border:1px solid #2a2a3e;border-radius:16px;padding:20px"><h1 style="margin:0 0 8px;font-size:18px">Uygulama başlatılamadı</h1><p style="margin:0 0 8px;color:#9ca3af;font-size:14px">Kod derlenirken bir hata oluştu. Konsolu açıp <b>APP_BOOT_ERROR</b> kaydına bak.</p><pre style="white-space:pre-wrap;color:#ffb4b4;font-size:12px">${String(err&&err.message||err)}</pre></div></div>`;
+        }
+    }
+})();
+</script>
 </body>
 </html>
-  
