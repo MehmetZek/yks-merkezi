@@ -1207,6 +1207,8 @@ const App=()=>{
     const[mF,setMF]=useState({id:null,subject:'matematik',topic:'',desc:'',logic:'',type:'bilgi',source:'',image:'',resolved:false});
     const[tI,setTI]=useState({text:'',subject:'matematik',priority:'medium'});
     const[clock,setClock]=useState(Date.now());
+    const[notifEnabled,setNotifEnabled]=useState(S.g('notifEnabled',false));
+    const[notifPermission,setNotifPermission]=useState(typeof Notification!=='undefined'?Notification.permission:'unsupported');
 
     const todayObj=new Date(clock);
     const today=ymd(todayObj);
@@ -1224,7 +1226,16 @@ const App=()=>{
     useEffect(()=>{S.s('commanderName',commanderName)},[commanderName]);
     useEffect(()=>{S.s('weeklyPlan',weeklyPlan)},[weeklyPlan]);
     useEffect(()=>{S.s('flashcards',flashcards)},[flashcards]);
+    useEffect(()=>{S.s('notifEnabled',notifEnabled)},[notifEnabled]);
     useEffect(()=>{const id=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(id)},[]);
+    useEffect(()=>{
+        if(typeof Notification==='undefined'){setNotifPermission('unsupported');return}
+        const sync=()=>setNotifPermission(Notification.permission);
+        sync();
+        window.addEventListener('focus',sync);
+        document.addEventListener('visibilitychange',sync);
+        return()=>{window.removeEventListener('focus',sync);document.removeEventListener('visibilitychange',sync)};
+    },[]);
 
     // Auto daily tasks
     useEffect(()=>{
@@ -1261,6 +1272,33 @@ const App=()=>{
     const closeMd=useCallback(()=>setModal({open:false,type:null}),[]);
     const navTo=useCallback((page,sub)=>{setPg(page);if(sub)setToolTab(sub)},[]);
     const openEditMistake=useCallback(m=>{setMF({id:m.id,subject:m.subject||'matematik',topic:m.topic||'',desc:m.desc||m.description||'',logic:m.logic||m.correctLogic||'',type:m.type||'bilgi',source:m.source||'',image:m.image||'',resolved:!!(m.resolved||m.closed)});setModal({open:true,type:'mistake'})},[]);
+    const ensureSW=useCallback(async()=>{if(!('serviceWorker' in navigator))return null;try{const reg=await navigator.serviceWorker.register('./sw.js?v=3');await navigator.serviceWorker.ready;return reg}catch(e){console.error('SW_REGISTER_ERR',e);return null}},[]);
+    const showLocalNotification=useCallback(async(title,body,tag='yks-camp')=>{
+        if(typeof Notification==='undefined'||Notification.permission!=='granted')return false;
+        const options={body,tag,icon:'./android-chrome-192x192.png?v=2',badge:'./android-chrome-192x192.png?v=2'};
+        try{
+            const reg=await ensureSW();
+            if(reg&&reg.showNotification){await reg.showNotification(title,options);return true}
+            new Notification(title,options);return true;
+        }catch(e){console.error('NOTIFICATION_ERR',e);return false}
+    },[ensureSW]);
+    const enableCampNotifications=useCallback(async()=>{
+        if(typeof Notification==='undefined'){notify('⚠️ Bu tarayıcı bildirim desteklemiyor');return}
+        await ensureSW();
+        let perm=Notification.permission;
+        if(perm!=='granted')perm=await Notification.requestPermission();
+        setNotifPermission(perm);
+        if(perm!=='granted'){setNotifEnabled(false);notify('⚠️ Bildirim izni verilmedi');return}
+        setNotifEnabled(true);
+        await showLocalNotification('YKS Merkezi','Kamp bildirimleri aktif. Etütlerden önce hatırlatma alacaksın.','notif-enabled');
+        notify('🔔 Kamp bildirimleri açıldı');
+    },[ensureSW,showLocalNotification,notify]);
+    const disableCampNotifications=useCallback(()=>{setNotifEnabled(false);notify('🔕 Kamp bildirimleri kapandı')},[notify]);
+    const testCampNotification=useCallback(async()=>{
+        if(notifPermission!=='granted'){notify('⚠️ Önce bildirim izni ver');return}
+        await showLocalNotification('YKS Merkezi','Bu bir test bildirimi. Bildirimler çalışıyor.','notif-test');
+        notify('✅ Test bildirimi gönderildi');
+    },[notifPermission,showLocalNotification,notify]);
 
     // Today stats - TYT and AYT separate
     const tSess=useMemo(()=>sessions.filter(s=>s.date===today),[sessions,today]);
@@ -1448,6 +1486,48 @@ const App=()=>{
         }
         setModal({open:true,type:'session'});
     },[sessions,today,campWindowLabels]);
+    useEffect(()=>{
+        if(!notifEnabled||notifPermission!=='granted'||!isWeekday)return;
+        const totalCampDone=campPlan.filter(x=>x.done).length;
+        const totalTodaySessions=tSess.filter(s=>isTYT(s)).length;
+        campPlan.forEach(row=>{
+            const startMin=toMin(row.slot.start);
+            const diff=startMin-nowMin;
+            const keyBase=`yks_notif_${today}_${row.slot.id}`;
+            if(diff===5&&!localStorage.getItem(keyBase+'_5')){
+                const body=`${row.slot.label} 5 dk sonra başlıyor.${row.subject?` Öneri: ${row.subject.name}.`:''}`;
+                showLocalNotification('TYT Kamp Hatırlatma',body,keyBase+'_5');
+                localStorage.setItem(keyBase+'_5','1');
+            }
+            if(diff===0&&!localStorage.getItem(keyBase+'_0')){
+                const body=`${row.slot.label} başladı.${row.subject?` Şimdi ${row.subject.name} çalış.`:''}`;
+                showLocalNotification('Etüt Başladı',body,keyBase+'_0');
+                localStorage.setItem(keyBase+'_0','1');
+            }
+        });
+        const middayKey=`yks_notif_${today}_midday_check`;
+        if(nowMin===14*60+45 && totalTodaySessions===0 && !localStorage.getItem(middayKey)){
+            showLocalNotification('TYT Kamp Kontrolü','Bugün henüz TYT kaydı görünmüyor. 15:00 etüdünü boş geçme.',middayKey);
+            localStorage.setItem(middayKey,'1');
+        }
+        const streakKey=`yks_notif_${today}_streak_risk`;
+        if(nowMin===20*60+15 && totalCampDone<2 && !localStorage.getItem(streakKey)){
+            showLocalNotification('Seri Riski','Bugün kamp temposu düşük görünüyor. Akşam etüdünü kullanıp seriyi koru.',streakKey);
+            localStorage.setItem(streakKey,'1');
+        }
+        const lateKey=`yks_notif_${today}_late_push`;
+        if(nowMin===21*60+45 && totalTodaySessions===0 && !localStorage.getItem(lateKey)){
+            showLocalNotification('Bugün Boş Geçmesin','En az bir kısa TYT oturumu kaydet. Seriyi kaybetme.',lateKey);
+            localStorage.setItem(lateKey,'1');
+        }
+        const debriefMin=21*60+5;
+        const debriefDiff=debriefMin-nowMin;
+        const debriefKey=`yks_notif_${today}_debrief`;
+        if(debriefDiff===0&&!localStorage.getItem(debriefKey)){
+            showLocalNotification('Gün Sonu Özeti','Bugünkü TYT kamp özetine bak ve yarın ilk bloğu planla.',debriefKey);
+            localStorage.setItem(debriefKey,'1');
+        }
+    },[notifEnabled,notifPermission,isWeekday,campPlan,nowMin,today,showLocalNotification,tSess]);
 
     const mistakeDNA=useMemo(()=>{
         const total=mistakes.length;
@@ -1695,6 +1775,28 @@ const App=()=>{
                         </div>)}
                     </div>
                 </>}
+            </Card>
+
+            <Card title="🔔 Kamp Bildirimleri" subtitle="Etütten 5 dk önce, etüt başında, tempo düşünce ve seri riske girince uyarır" className="camp-panel" action={notifEnabled&&notifPermission==='granted'?<span className="guide-chip" style={{background:'rgba(0,200,83,.12)',borderColor:'rgba(0,200,83,.25)',color:'#00c853'}}>Açık</span>:<span className="guide-chip" style={{background:'rgba(255,152,0,.12)',borderColor:'rgba(255,152,0,.25)',color:'#ff9800'}}>{notifPermission==='denied'?'Engelli':'Kapalı'}</span>}>
+                <div style={{display:'grid',gridTemplateColumns:'1.2fr .8fr',gap:'12px',alignItems:'start'}}>
+                    <div className="soft-card" style={{padding:'12px'}}>
+                        <div style={{fontSize:'12px',fontWeight:'700',color:'#fff',marginBottom:'6px'}}>Durum</div>
+                        <div style={{fontSize:'12px',color:'#9ca3af',lineHeight:'1.5'}}>Bildirimler en sağlam şekilde şu an için <b>kamp etütleri</b>, <b>tempo düşüşü</b> ve <b>gün sonu özeti</b> için çalışır. Özellikle PWA açıkken veya sekme arka plandayken daha tutarlı olur.</div>
+                        <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginTop:'10px'}}>
+                            <span className="guide-chip">5 dk önce uyar</span>
+                            <span className="guide-chip">başlangıç uyarısı</span>
+                            <span className="guide-chip">14:45 kontrol</span>
+                            <span className="guide-chip">20:15 seri riski</span>
+                            <span className="guide-chip">21:45 son çağrı</span>
+                            <span className="guide-chip">21:05 gün sonu</span>
+                        </div>
+                    </div>
+                    <div className="soft-card" style={{padding:'12px',display:'grid',gap:'8px'}}>
+                        <Btn onClick={notifEnabled?disableCampNotifications:enableCampNotifications} v={notifEnabled&&notifPermission==='granted'?'danger':'primary'} style={{width:'100%',justifyContent:'center'}}>{notifEnabled&&notifPermission==='granted'?'Bildirimleri Kapat':'Bildirimleri Aç'}</Btn>
+                        <Btn onClick={testCampNotification} v="ghost" style={{width:'100%',justifyContent:'center'}}>Test Bildirimi</Btn>
+                        <div style={{fontSize:'11px',color:'#6b7280'}}>İzin: {notifPermission==='granted'?'verildi':notifPermission==='denied'?'engellendi':notifPermission==='unsupported'?'desteklenmiyor':'bekliyor'}</div>
+                    </div>
+                </div>
             </Card>
 
             <Card title="🧭 Mini Kamp Rehberi" subtitle="Uygulamayı en verimli şekilde kullanmak için kısa akış" className="camp-panel">
@@ -2677,16 +2779,13 @@ const App=()=>{
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>{
-        navigator.serviceWorker.getRegistrations()
-            .then(regs=>Promise.all(regs.map(r=>r.unregister())))
-            .then(()=>('caches' in window?caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))):null))
-            .catch(()=>{});
-    });
-}
 </script>
 <script>
+if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+        navigator.serviceWorker.register('./sw.js?v=3').catch(err=>console.error('SW_REGISTER_ERR',err));
+    });
+}
 (function(){
     const source=document.getElementById('app-code').textContent;
     try{
